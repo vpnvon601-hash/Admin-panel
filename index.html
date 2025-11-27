@@ -1,18 +1,11 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Panel Admin — LA ZONA DEL BARBERO</title>
   <style>
-    :root{
-      --bg:#0b0f12;
-      --card:#0f1720;
-      --muted:#9aa4b2;
-      --accent:#e6e6e6;
-      --danger:#ef4444;
-      --border:#1f2937;
-    }
+    :root{--bg:#0b0f12;--card:#0f1720;--muted:#9aa4b2;--accent:#e6e6e6;--danger:#ef4444;--border:#1f2937}
     *{box-sizing:border-box}
     body{margin:0;font-family:Inter,Arial;background:var(--bg);color:var(--accent)}
     .wrap{max-width:1100px;margin:28px auto;padding:18px}
@@ -26,6 +19,7 @@
     button.danger{background:var(--danger);color:#fff;border:none;padding:8px 10px;border-radius:8px}
     .small{font-size:13px;color:var(--muted)}
     .list{margin-top:12px}
+    .group{margin-bottom:18px}
     .item{display:grid;grid-template-columns:1fr auto;gap:12px;padding:12px;border-bottom:1px solid var(--border);align-items:center}
     .tag{background:#0b1a28;padding:6px 8px;border-radius:8px;border:1px solid #12202a;font-size:13px}
     @media(max-width:720px){.item{grid-template-columns:1fr;gap:8px}}
@@ -36,11 +30,9 @@
     <header>
       <div>
         <h1>Panel de Citas — LA ZONA DEL BARBERO</h1>
-        <div class="small">Acceso restringido — Lectura en tiempo real</div>
+        <div class="small">Acceso restringido — Lectura en tiempo real (Realtime DB)</div>
       </div>
-      <div style="width:360px">
-        <input id="filterInput" class="search" placeholder="Filtrar por nombre, barbero, servicio o teléfono" />
-      </div>
+      <div style="width:360px"><input id="filterInput" class="search" placeholder="Filtrar por nombre, barbero, servicio o teléfono" /></div>
     </header>
 
     <div id="authBox" class="auth-box card" aria-live="polite">
@@ -58,7 +50,7 @@
         <div>
           <div class="small">Panel activo</div>
           <div style="height:6px"></div>
-          <div class="small">Colección: <code>appointments</code></div>
+          <div class="small">Ruta: <code>/appointments/{barbero}/{YYYY-MM-DD}/{startMinutes}</code></div>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
           <button id="btnRefresh" class="ghost">Forzar actualizar</button>
@@ -72,10 +64,26 @@
   </div>
 
   <script type="module">
-    // Access key
-    const ACCESS_KEY = "LAZONADELBARBERO2025";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, onValue, remove, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    // === CONFIGURA AQUÍ TU FIREBASE ===
+    const firebaseConfig = {
+      apiKey: "AIzaSyAN8piM_UR3kLDUnJFYe5diazItfvYIlSA",
+      authDomain: "lazonadelbarbero-b4e75.firebaseapp.com",
+      databaseURL: "https://lazonadelbarbero-b4e75-default-rtdb.firebaseio.com",
+      projectId: "lazonadelbarbero-b4e75",
+      storageBucket: "lazonadelbarbero-b4e75.firebasestorage.app",
+      messagingSenderId: "251180096928",
+      appId: "1:251180096928:web:86d0ab83c7e444af79d8c5",
+      measurementId: "G-G4YL7M4Z00"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
     // DOM
+    const ACCESS_KEY = "LAZONADELBARBERO2025";
     const authBox = document.getElementById('authBox');
     const adminKey = document.getElementById('adminKey');
     const btnAcceder = document.getElementById('btnAcceder');
@@ -87,132 +95,109 @@
     const btnLogout = document.getElementById('btnLogout');
     const filterInput = document.getElementById('filterInput');
 
-    // Firebase
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, query, orderBy, onSnapshot, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    let listeners = []; // to detach on logout
+    let snapshotData = []; // flat array of {id, barbero, date, startMinutes, data}
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyAN8piM_UR3kLDUnJFYe5diazItfvYIlSA",
-      authDomain: "lazonadelbarbero-b4e75.firebaseapp.com",
-      projectId: "lazonadelbarbero-b4e75",
-      storageBucket: "lazonadelbarbero-b4e75.firebasestorage.app",
-      messagingSenderId: "251180096928",
-      appId: "1:251180096928:web:86d0ab83c7e444af79d8c5",
-      measurementId: "G-G4YL7M4Z00"
-    };
+    function minutesToTime(m){ const hh=String(Math.floor(m/60)).padStart(2,'0'); const mm=String(m%60).padStart(2,'0'); return `${hh}:${mm}`; }
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    let unsubscribe = null;
-    let lastSnapshotDocs = [];
-
-    function minutesToTime(m){ const hh = String(Math.floor(m/60)).padStart(2,'0'); const mm = String(m%60).padStart(2,'0'); return `${hh}:${mm}`; }
-
-    function renderList(docs){
+    // render flat list
+    function renderList(flat){
       listContainer.innerHTML = '';
-      if(!docs.length){ emptyNotice.style.display='block'; return; } else emptyNotice.style.display='none';
-      docs.forEach(d=>{
-        const id = d._id || d.id;
-        const data = d.data || d;
-        const hora = minutesToTime(data.startMinutes);
-        const item = document.createElement('div'); item.className='item';
-
+      if(flat.length === 0){ emptyNotice.style.display='block'; return; } else emptyNotice.style.display='none';
+      flat.forEach(item=>{
+        const data = item.data;
+        const hora = minutesToTime(Number(data.startMinutes));
+        const block = document.createElement('div'); block.className='item';
         const left = document.createElement('div'); left.style.display='flex'; left.style.flexDirection='column';
         left.innerHTML = `
           <div style="display:flex;gap:12px;align-items:center">
             <div style="font-weight:700">${data.nombre}</div>
-            <div class="tag">${data.barbero}</div>
-            <div class="small" style="margin-left:8px">${data.date} · ${hora}</div>
+            <div class="tag">${item.barbero}</div>
+            <div class="small" style="margin-left:8px">${item.date} · ${hora}</div>
           </div>
           <div style="display:flex;gap:12px;margin-top:6px;flex-wrap:wrap">
             <div class="small">${data.servicio}</div>
             <div class="small">Duración: ${data.durationMinutes} min</div>
             <div class="small">Tel: ${data.telefono}</div>
             <div class="small">Email: ${data.email || '-'}</div>
-            <div class="small">Precio: ${data.priceCOP ? '$' + data.priceCOP.toLocaleString('es-CO') : '-'}</div>
+            <div class="small">Precio: ${data.priceCOP ? '$' + Number(data.priceCOP).toLocaleString('es-CO') : '-'}</div>
           </div>
         `;
-
         const right = document.createElement('div'); right.style.display='flex'; right.style.gap='8px'; right.style.alignItems='center';
         const btnDel = document.createElement('button'); btnDel.className='danger'; btnDel.textContent='Eliminar';
         btnDel.onclick = async ()=>{
           if(!confirm('Eliminar cita? Esta acción no se puede deshacer.')) return;
           try{
-            await deleteDoc(doc(db,'appointments', id));
+            const path = `appointments/${item.barbero}/${item.date}/${item.id}`;
+            await remove(ref(db, path));
             alert('Cita eliminada.');
-          }catch(err){
-            console.error(err); alert('Error eliminando cita.');
-          }
+          } catch(err){ console.error(err); alert('Error eliminando cita.'); }
         };
         right.appendChild(btnDel);
-
-        item.appendChild(left);
-        item.appendChild(right);
-        listContainer.appendChild(item);
+        block.appendChild(left); block.appendChild(right);
+        listContainer.appendChild(block);
       });
     }
 
-    function attachSnapshot(){
-      if(unsubscribe) unsubscribe();
-      const ref = collection(db,'appointments');
-      const q = query(ref, orderBy('date'), orderBy('startMinutes'));
-      unsubscribe = onSnapshot(q, snap=>{
-        const docs = [];
-        snap.forEach(d=>{
-          const obj = d.data(); obj._id = d.id;
-          docs.push({ _id: d.id, data: obj });
-        });
-        lastSnapshotDocs = docs;
-        renderList(docs.map(x=> ({ _id: x._id, ...x.data })));
-      }, err=>{
-        console.error('snapshot err', err);
-        listContainer.innerHTML = '<div class="small">Error cargando citas.</div>';
-      });
+    // attach listener on full appointments tree and flatten
+    function attachRealtime(){
+      // detach previous
+      listeners.forEach(u => u()); listeners = [];
+      snapshotData = [];
+      const baseRef = ref(db, 'appointments');
+      // listen for value on base - whenever data changes we rebuild flat list
+      const unsub = onValue(baseRef, (snap)=>{
+        const val = snap.val();
+        const flat = [];
+        if(val){
+          for(const barbero of Object.keys(val)){
+            const byDate = val[barbero];
+            for(const date of Object.keys(byDate)){
+              const dayObj = byDate[date];
+              for(const id of Object.keys(dayObj)){
+                flat.push({ id, barbero, date, data: dayObj[id] });
+              }
+            }
+          }
+          // sort by date then startMinutes
+          flat.sort((a,b)=>{
+            if(a.date < b.date) return -1; if(a.date > b.date) return 1;
+            return Number(a.data.startMinutes) - Number(b.data.startMinutes);
+          });
+        }
+        snapshotData = flat;
+        renderList(flat);
+      }, (err)=>{ console.error(err); listContainer.innerHTML = '<div class="small">Error cargando citas.</div>'; });
+
+      // store unsubscribe function
+      listeners.push(()=> unsub());
     }
 
-    // Filter
+    // filter input
     filterInput.addEventListener('input', ()=>{
-      const q = (filterInput.value || '').trim().toLowerCase();
-      if(!q) { renderList(lastSnapshotDocs.map(x=> ({ _id: x._id, ...x.data }))); return; }
-      const filtered = lastSnapshotDocs.filter(x=>{
-        const d = x.data;
-        return (d.nombre||'').toLowerCase().includes(q) ||
-               (d.barbero||'').toLowerCase().includes(q) ||
-               (d.servicio||'').toLowerCase().includes(q) ||
-               (d.telefono||'').toLowerCase().includes(q);
-      }).map(x=> ({ _id: x._id, ...x.data }));
+      const q = (filterInput.value||'').trim().toLowerCase();
+      if(!q){ renderList(snapshotData); return; }
+      const filtered = snapshotData.filter(item=>{
+        const d = item.data;
+        return (d.nombre||'').toLowerCase().includes(q) || (item.barbero||'').toLowerCase().includes(q) || (d.servicio||'').toLowerCase().includes(q) || (d.telefono||'').toLowerCase().includes(q);
+      });
       renderList(filtered);
     });
 
-    // Auth flow
+    // auth flow
     btnAcceder.addEventListener('click', ()=>{
-      const v = (adminKey.value || '').trim();
+      const v = (adminKey.value||'').trim();
       if(v === ACCESS_KEY){
-        authBox.style.display = 'none';
-        panel.style.display = 'block';
-        attachSnapshot();
-      } else {
-        authMsg.textContent = 'Clave incorrecta.'; authMsg.style.color = '#f87171';
-      }
+        authBox.style.display='none'; panel.style.display='block'; attachRealtime();
+      } else { authMsg.textContent='Clave incorrecta.'; authMsg.style.color='#f87171'; }
     });
 
-    btnRefresh.addEventListener('click', ()=>{
-      attachSnapshot();
-      alert('Forzando actualización...');
-    });
+    btnRefresh.addEventListener('click', ()=>{ attachRealtime(); alert('Forzando actualización...'); });
 
     btnLogout.addEventListener('click', ()=>{
-      if(unsubscribe) unsubscribe();
-      lastSnapshotDocs = [];
-      listContainer.innerHTML = '';
-      panel.style.display = 'none';
-      authBox.style.display = 'block';
-      adminKey.value = '';
-      authMsg.textContent = 'Cerraste sesión.';
+      listeners.forEach(u=>u()); listeners=[]; snapshotData=[]; listContainer.innerHTML=''; panel.style.display='none'; authBox.style.display='block'; adminKey.value=''; authMsg.textContent='Cerraste sesión.';
     });
 
-    // allow Enter key
     adminKey.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') btnAcceder.click(); });
   </script>
 </body>
