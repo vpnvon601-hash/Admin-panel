@@ -14,51 +14,38 @@
       --border:#1f2937;
     }
     *{box-sizing:border-box}
-    body{margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);color:var(--accent);-webkit-font-smoothing:antialiased}
+    body{margin:0;font-family:Inter,Arial;background:var(--bg);color:var(--accent)}
     .wrap{max-width:1100px;margin:28px auto;padding:18px}
     header{display:flex;align-items:center;justify-content:space-between;gap:12px}
     h1{margin:0;font-size:20px}
-    .subtitle{color:var(--muted);font-size:13px}
-    .card{background:var(--card);border-radius:12px;padding:14px;border:1px solid var(--border);box-shadow:0 8px 24px rgba(0,0,0,0.25)}
+    .card{background:var(--card);border-radius:12px;padding:14px;border:1px solid var(--border)}
     .auth-box{max-width:420px;margin:70px auto;padding:18px;background:#0c1720;border-radius:10px;border:1px solid var(--border)}
-    input[type=password]{width:100%;padding:10px;border-radius:8px;border:1px solid #22303b;background:#071014;color:var(--accent)}
+    input[type=password], input.search{width:100%;padding:10px;border-radius:8px;border:1px solid #22303b;background:#071014;color:var(--accent)}
     button{cursor:pointer;border-radius:8px;padding:8px 10px;border:1px solid rgba(255,255,255,0.03);background:#0b2540;color:var(--accent);font-weight:600}
     button.ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
-    button.danger{background:var(--danger);color:#fff;border:none}
-    .meta{color:var(--muted);font-size:13px}
+    button.danger{background:var(--danger);color:#fff;border:none;padding:8px 10px;border-radius:8px}
+    .small{font-size:13px;color:var(--muted)}
     .list{margin-top:12px}
     .item{display:grid;grid-template-columns:1fr auto;gap:12px;padding:12px;border-bottom:1px solid var(--border);align-items:center}
-    .item-left{display:flex;flex-direction:column;gap:6px}
-    .item-right{display:flex;gap:8px;align-items:center}
-    .small{font-size:13px;color:var(--muted)}
     .tag{background:#0b1a28;padding:6px 8px;border-radius:8px;border:1px solid #12202a;font-size:13px}
-    .controls{display:flex;gap:8px}
-    .topbar{display:flex;gap:8px;align-items:center}
-    .search{padding:8px;border-radius:8px;border:1px solid var(--border);background:#061218;color:var(--accent)}
-    @media(max-width:720px){
-      .item{grid-template-columns:1fr;gap:8px}
-      .item-right{justify-content:flex-start}
-    }
+    @media(max-width:720px){.item{grid-template-columns:1fr;gap:8px}}
   </style>
 </head>
 <body>
   <div class="wrap">
-
     <header>
       <div>
         <h1>Panel de Citas — LA ZONA DEL BARBERO</h1>
-        <div class="subtitle">Acceso restringido — Lectura en tiempo real</div>
+        <div class="small">Acceso restringido — Lectura en tiempo real</div>
       </div>
-      <div class="topbar">
-        <input id="filterInput" class="search" placeholder="Filtrar por nombre, barbero o servicio" />
-        <button id="btnRefresh" class="ghost">Forzar actualizar</button>
+      <div style="width:360px">
+        <input id="filterInput" class="search" placeholder="Filtrar por nombre, barbero, servicio o teléfono" />
       </div>
     </header>
 
-    <!-- Auth box (initial) -->
     <div id="authBox" class="auth-box card" aria-live="polite">
       <h3 style="margin:0 0 8px 0">Acceso de administrador</h3>
-      <div class="small meta">Introduce la clave para ver el panel.</div>
+      <div class="small">Introduce la clave para ver el panel.</div>
       <div style="height:10px"></div>
       <input type="password" id="adminKey" placeholder="Clave de acceso" />
       <div style="height:10px"></div>
@@ -66,24 +53,21 @@
       <div id="authMsg" class="small" style="margin-top:10px"></div>
     </div>
 
-    <!-- Panel (hidden until auth) -->
     <div id="panel" class="card" style="display:none">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
         <div>
           <div class="small">Panel activo</div>
           <div style="height:6px"></div>
-          <div class="meta">Listado de citas (colección: <code>appointments</code>)</div>
+          <div class="small">Colección: <code>appointments</code></div>
         </div>
-        <div class="controls">
+        <div style="display:flex;gap:8px;align-items:center">
+          <button id="btnRefresh" class="ghost">Forzar actualizar</button>
           <button id="btnLogout" class="ghost">Cerrar sesión</button>
         </div>
       </div>
 
-      <div style="height:12px"></div>
-
       <div id="listContainer" class="list"></div>
-
-      <div id="emptyNotice" class="small meta" style="display:none;margin-top:12px">No hay citas.</div>
+      <div id="emptyNotice" class="small" style="display:none;margin-top:12px">No hay citas.</div>
     </div>
   </div>
 
@@ -91,13 +75,11 @@
     // Access key
     const ACCESS_KEY = "LAZONADELBARBERO2025";
 
-    // Auth elements
+    // DOM
     const authBox = document.getElementById('authBox');
     const adminKey = document.getElementById('adminKey');
     const btnAcceder = document.getElementById('btnAcceder');
     const authMsg = document.getElementById('authMsg');
-
-    // Panel elements
     const panel = document.getElementById('panel');
     const listContainer = document.getElementById('listContainer');
     const emptyNotice = document.getElementById('emptyNotice');
@@ -105,7 +87,7 @@
     const btnLogout = document.getElementById('btnLogout');
     const filterInput = document.getElementById('filterInput');
 
-    // Firebase imports
+    // Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, query, orderBy, onSnapshot, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -122,49 +104,39 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // State
     let unsubscribe = null;
-    let lastSnapshotDocs = []; // cache for filtering
+    let lastSnapshotDocs = [];
 
-    // Helpers
-    function minutesToTime(m){
-      const hh = String(Math.floor(m/60)).padStart(2,'0');
-      const mm = String(m%60).padStart(2,'0');
-      return `${hh}:${mm}`;
-    }
+    function minutesToTime(m){ const hh = String(Math.floor(m/60)).padStart(2,'0'); const mm = String(m%60).padStart(2,'0'); return `${hh}:${mm}`; }
 
     function renderList(docs){
       listContainer.innerHTML = '';
       if(!docs.length){ emptyNotice.style.display='block'; return; } else emptyNotice.style.display='none';
-      docs.forEach(d => {
-        const id = d._id;
-        const data = d.data || d; // support both shapes
+      docs.forEach(d=>{
+        const id = d._id || d.id;
+        const data = d.data || d;
         const hora = minutesToTime(data.startMinutes);
-        const item = document.createElement('div');
-        item.className = 'item';
+        const item = document.createElement('div'); item.className='item';
 
-        const left = document.createElement('div');
-        left.className = 'item-left';
+        const left = document.createElement('div'); left.style.display='flex'; left.style.flexDirection='column';
         left.innerHTML = `
           <div style="display:flex;gap:12px;align-items:center">
             <div style="font-weight:700">${data.nombre}</div>
             <div class="tag">${data.barbero}</div>
-            <div class="small meta">${data.date} · ${hora}</div>
+            <div class="small" style="margin-left:8px">${data.date} · ${hora}</div>
           </div>
-          <div style="display:flex;gap:12px;margin-top:6px">
+          <div style="display:flex;gap:12px;margin-top:6px;flex-wrap:wrap">
             <div class="small">${data.servicio}</div>
-            <div class="small meta">Duración: ${data.durationMinutes} min</div>
-            <div class="small meta">Tel: ${data.telefono}</div>
-            <div class="small meta">Email: ${data.email || '-'}</div>
+            <div class="small">Duración: ${data.durationMinutes} min</div>
+            <div class="small">Tel: ${data.telefono}</div>
+            <div class="small">Email: ${data.email || '-'}</div>
+            <div class="small">Precio: ${data.priceCOP ? '$' + data.priceCOP.toLocaleString('es-CO') : '-'}</div>
           </div>
         `;
 
-        const right = document.createElement('div');
-        right.className = 'item-right';
-        const btnDel = document.createElement('button');
-        btnDel.className = 'danger';
-        btnDel.textContent = 'Eliminar';
-        btnDel.onclick = async () => {
+        const right = document.createElement('div'); right.style.display='flex'; right.style.gap='8px'; right.style.alignItems='center';
+        const btnDel = document.createElement('button'); btnDel.className='danger'; btnDel.textContent='Eliminar';
+        btnDel.onclick = async ()=>{
           if(!confirm('Eliminar cita? Esta acción no se puede deshacer.')) return;
           try{
             await deleteDoc(doc(db,'appointments', id));
@@ -173,89 +145,75 @@
             console.error(err); alert('Error eliminando cita.');
           }
         };
-
         right.appendChild(btnDel);
+
         item.appendChild(left);
         item.appendChild(right);
         listContainer.appendChild(item);
       });
     }
 
-    // Attach realtime listener
     function attachSnapshot(){
-      if(unsubscribe) unsubscribe(); // detach existing
+      if(unsubscribe) unsubscribe();
       const ref = collection(db,'appointments');
       const q = query(ref, orderBy('date'), orderBy('startMinutes'));
-      unsubscribe = onSnapshot(q, snap => {
+      unsubscribe = onSnapshot(q, snap=>{
         const docs = [];
-        snap.forEach(d => {
-          const obj = d.data();
-          obj._id = d.id;
+        snap.forEach(d=>{
+          const obj = d.data(); obj._id = d.id;
           docs.push({ _id: d.id, data: obj });
         });
         lastSnapshotDocs = docs;
         renderList(docs.map(x=> ({ _id: x._id, ...x.data })));
-      }, err => {
+      }, err=>{
         console.error('snapshot err', err);
-        listContainer.innerHTML = '<div class="small meta">Error cargando citas.</div>';
+        listContainer.innerHTML = '<div class="small">Error cargando citas.</div>';
       });
     }
 
-    // Filter support
+    // Filter
     filterInput.addEventListener('input', ()=>{
       const q = (filterInput.value || '').trim().toLowerCase();
-      if(!q){ renderList(lastSnapshotDocs.map(x=> ({ _id: x._id, ...x.data }))); return; }
+      if(!q) { renderList(lastSnapshotDocs.map(x=> ({ _id: x._id, ...x.data }))); return; }
       const filtered = lastSnapshotDocs.filter(x=>{
-        const dd = x.data;
-        return (dd.nombre || '').toLowerCase().includes(q) ||
-               (dd.barbero || '').toLowerCase().includes(q) ||
-               (dd.servicio || '').toLowerCase().includes(q) ||
-               (dd.telefono || '').toLowerCase().includes(q);
+        const d = x.data;
+        return (d.nombre||'').toLowerCase().includes(q) ||
+               (d.barbero||'').toLowerCase().includes(q) ||
+               (d.servicio||'').toLowerCase().includes(q) ||
+               (d.telefono||'').toLowerCase().includes(q);
       }).map(x=> ({ _id: x._id, ...x.data }));
       renderList(filtered);
     });
 
-    // Login flow
-    btnAcceder.onclick = ()=>{
+    // Auth flow
+    btnAcceder.addEventListener('click', ()=>{
       const v = (adminKey.value || '').trim();
       if(v === ACCESS_KEY){
         authBox.style.display = 'none';
         panel.style.display = 'block';
-        // attach snapshot
         attachSnapshot();
       } else {
-        authMsg.textContent = 'Clave incorrecta.';
-        authMsg.style.color = '#f87171';
+        authMsg.textContent = 'Clave incorrecta.'; authMsg.style.color = '#f87171';
       }
-    };
-
-    btnRefresh.onclick = ()=>{
-      // reattach snapshot (force)
-      attachSnapshot();
-      alert('Forzando actualización...');
-    };
-
-    btnLogout.onclick = ()=>{
-      if(unsubscribe) unsubscribe();
-      lastSnapshotDocs = [];
-      listContainer.innerHTML='';
-      panel.style.display='none';
-      authBox.style.display='block';
-      adminKey.value='';
-      authMsg.textContent = 'Cerraste sesión.';
-      authMsg.style.color = varColor('#9aa4b2');
-    };
-
-    // small helper to set color safely
-    function varColor(hex){
-      return hex;
-    }
-
-    // UX: allow pressing Enter in password field
-    adminKey.addEventListener('keydown', (e)=>{
-      if(e.key === 'Enter') btnAcceder.click();
     });
 
+    btnRefresh.addEventListener('click', ()=>{
+      attachSnapshot();
+      alert('Forzando actualización...');
+    });
+
+    btnLogout.addEventListener('click', ()=>{
+      if(unsubscribe) unsubscribe();
+      lastSnapshotDocs = [];
+      listContainer.innerHTML = '';
+      panel.style.display = 'none';
+      authBox.style.display = 'block';
+      adminKey.value = '';
+      authMsg.textContent = 'Cerraste sesión.';
+    });
+
+    // allow Enter key
+    adminKey.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') btnAcceder.click(); });
   </script>
 </body>
 </html>
