@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Panel de Citas — LA ZONA DEL BARBERO</title>
+<style>
+  body{background:#0f1720;color:#e6eef8;font-family:Inter,Arial;padding:18px}
+  .wrap{max-width:980px;margin:0 auto}
+  .hidden{display:none}
+  h1{margin-bottom:10px}
+
+  /* Caja clave */
+  #authBox{
+    max-width:400px;
+    margin:80px auto;
+    background:#111827;
+    padding:20px;
+    border-radius:10px;
+    border:1px solid #1f2937;
+  }
+  input{
+    width:100%;
+    padding:10px;
+    margin-top:10px;
+    border-radius:8px;
+    border:1px solid #374151;
+    background:#1f2937;
+    color:#fff;
+  }
+  button{
+    margin-top:15px;
+    width:100%;
+    padding:10px;
+    border:none;
+    border-radius:8px;
+    background:#2563eb;
+    color:white;
+    font-weight:600;
+    cursor:pointer;
+  }
+
+  /* Citas */
+  .cita{background:#111827;padding:12px;border-radius:8px;margin-bottom:10px;border:1px solid #1f2937}
+  .meta{color:#9aa4b2;font-size:13px}
+</style>
+</head>
+<body>
+
+  <!-- BOX DE ACCESO -->
+  <div id="authBox">
+    <h2>Acceso Restricto</h2>
+    <p>Ingresa la clave de administrador:</p>
+    <input type="password" id="adminKey" placeholder="Clave de acceso">
+    <button id="btnAcceder">Entrar</button>
+    <p id="msg" class="meta" style="margin-top:10px;"></p>
+  </div>
+
+  <!-- PANEL REAL -->
+  <div class="wrap hidden" id="panel">
+    <h1>Panel de Citas</h1>
+    <div class="meta">Actualiza en tiempo real.</div>
+    <div id="lista" style="margin-top:12px"></div>
+  </div>
+
+
+<script type="module">
+  /***************************
+   * 🔐 SISTEMA DE ACCESO
+   ***************************/
+  const ACCESS_KEY = "LAZONADELBARBERO2025";
+  const btnAcceder = document.getElementById("btnAcceder");
+  const adminKey = document.getElementById("adminKey");
+  const msg = document.getElementById("msg");
+  const authBox = document.getElementById("authBox");
+  const panel = document.getElementById("panel");
+
+  btnAcceder.onclick = () => {
+    if (adminKey.value.trim() === ACCESS_KEY) {
+      authBox.classList.add("hidden");
+      panel.classList.remove("hidden");
+    } else {
+      msg.textContent = "Clave incorrecta.";
+      msg.style.color = "#f87171";
+    }
+  };
+
+
+  /***************************
+   *  🔥 FIREBASE PANEL
+   ***************************/
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAN8piM_UR3kLDUnJFYe5diazItfvYIlSA",
+    authDomain: "lazonadelbarbero-b4e75.firebaseapp.com",
+    projectId: "lazonadelbarbero-b4e75",
+    storageBucket: "lazonadelbarbero-b4e75.firebasestorage.app",
+    messagingSenderId: "251180096928",
+    appId: "1:251180096928:web:86d0ab83c7e444af79d8c5",
+    measurementId: "G-G4YL7M4Z00"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const lista = document.getElementById('lista');
+  const q = query(collection(db,'appointments'), orderBy('date'), orderBy('startMinutes'));
+
+  onSnapshot(q, snap => {
+    lista.innerHTML = '';
+    snap.forEach(doc => {
+      const d = doc.data();
+      const h = String(Math.floor(d.startMinutes/60)).padStart(2,'0') + ":" + String(d.startMinutes%60).padStart(2,'0');
+
+      const div = document.createElement('div');
+      div.className = 'cita';
+      div.innerHTML = `
+        <div><strong>${d.nombre}</strong> — <span class="meta">${d.telefono} • ${d.email || '-'}</span></div>
+        <div style="margin-top:8px"><strong>${d.servicio}</strong> — Barbero: ${d.barbero}</div>
+        <div class="meta" style="margin-top:6px">${d.date} · ${h} · ${d.durationMinutes} min</div>
+      `;
+      lista.appendChild(div);
+    });
+
+    if(snap.empty) lista.innerHTML = '<div class="meta">No hay citas registradas.</div>';
+  });
+
+</script>
+
+</body>
+</html>
