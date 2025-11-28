@@ -2,40 +2,113 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Panel Admin Simple</title>
+<title>Panel Admin — iOS Dark</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
+  :root {
+    --bg: #0a0a0c;
+    --card: rgba(255,255,255,0.05);
+    --border: rgba(255,255,255,0.08);
+    --text: #ffffff;
+    --muted: #9aa0a6;
+    --danger: #ff4d4d;
+  }
+
   body {
-    font-family: Arial, sans-serif;
-    background: #111;
-    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", Arial;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
     padding: 20px;
   }
-  .item {
-    background: #1b1b1b;
-    padding: 12px;
-    border-radius: 8px;
-    margin-bottom: 10px;
-    border: 1px solid #333;
+
+  h2 {
+    font-weight: 600;
+    margin-bottom: 12px;
   }
+
+  /* CARD */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 18px;
+    border-radius: 14px;
+    backdrop-filter: blur(12px);
+    margin-bottom: 14px;
+  }
+
+  /* INPUT */
+  input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.04);
+    color: var(--text);
+    font-size: 16px;
+    margin-top: 8px;
+  }
+
+  input:focus {
+    outline: none;
+    border-color: rgba(255,255,255,0.18);
+  }
+
+  /* BUTTON */
+  .btn {
+    width: 100%;
+    margin-top: 12px;
+    padding: 12px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 12px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 16px;
+    backdrop-filter: blur(12px);
+  }
+
+  .btn:active {
+    transform: scale(0.96);
+    transition: 0.15s;
+  }
+
   .btn-delete {
-    background: #e14d4d;
+    margin-top: 10px;
+    background: var(--danger);
     border: none;
     padding: 8px 12px;
-    color: #fff;
-    border-radius: 6px;
+    border-radius: 10px;
     cursor: pointer;
-    margin-top: 10px;
+    color: white;
+  }
+
+  #loginBox, #panel {
+    max-width: 420px;
+    margin: 0 auto;
   }
 </style>
 </head>
 <body>
 
-<h2>Lista de citas</h2>
-<p>(Lectura directa de Firebase Realtime Database)</p>
+<!-- LOGIN -->
+<div id="loginBox" class="card">
+  <h2>Acceso Admin</h2>
+  <p style="color: var(--muted); margin-top: -6px;">
+    Ingresa la clave para ver las citas.
+  </p>
+  <input type="password" id="clave" placeholder="Clave de acceso">
+  <button class="btn" id="btnLogin">Entrar</button>
+  <p id="msg" style="color:#ff7777; font-size:14px; margin-top:6px;"></p>
+</div>
 
-<div id="lista"></div>
+<!-- PANEL -->
+<div id="panel" style="display:none;">
+  <h2>Lista de citas</h2>
+  <div id="lista"></div>
+</div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -55,17 +128,35 @@
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
+  const loginBox = document.getElementById("loginBox");
+  const panel = document.getElementById("panel");
   const lista = document.getElementById("lista");
 
+  const ACCESS_KEY = "LAZONADELBARBERO2025";
+
+  // LOGIN
+  document.getElementById("btnLogin").addEventListener("click", () => {
+    const v = document.getElementById("clave").value.trim();
+
+    if (v === ACCESS_KEY) {
+      loginBox.style.display = "none";
+      panel.style.display = "block";
+      cargarCitas();
+    } else {
+      document.getElementById("msg").innerHTML = "Clave incorrecta";
+    }
+  });
+
+  // Cargar citas
   function cargarCitas() {
     const refCitas = ref(db, "appointments");
 
     onValue(refCitas, snap => {
       lista.innerHTML = "";
-
       const data = snap.val();
+
       if (!data) {
-        lista.innerHTML = "<p>No hay citas guardadas.</p>";
+        lista.innerHTML = "<p style='color:var(--muted);'>No hay citas.</p>";
         return;
       }
 
@@ -76,22 +167,22 @@
             const c = data[barbero][fecha][id];
 
             const div = document.createElement("div");
-            div.className = "item";
+            div.className = "card";
 
             div.innerHTML = `
-              <strong>${c.nombre || "Sin nombre"}</strong><br>
-              Barbero: ${barbero}<br>
-              Servicio: ${c.servicio}<br>
-              Fecha: ${fecha}<br>
-              Hora: ${c.startMinutes} min<br>
-              Tel: ${c.telefono}<br>
-              Email: ${c.email}<br>
-              Precio: ${c.priceCOP}<br>
-              Creado: ${c.createdAt}<br>
+              <strong style="font-size:18px;">${c.nombre}</strong><br>
+              <span style="color:var(--muted);">Barbero:</span> ${barbero}<br>
+              <span style="color:var(--muted);">Servicio:</span> ${c.servicio}<br>
+              <span style="color:var(--muted);">Fecha:</span> ${fecha}<br>
+              <span style="color:var(--muted);">Hora:</span> ${c.startMinutes} min<br>
+              <span style="color:var(--muted);">Duración:</span> ${c.durationMinutes} min<br>
+              <span style="color:var(--muted);">Tel:</span> ${c.telefono}<br>
+              <span style="color:var(--muted);">Email:</span> ${c.email}<br>
+              <span style="color:var(--muted);">Precio:</span> ${c.priceCOP}<br>
+              <span style="color:var(--muted);">Creado:</span> ${c.createdAt}<br>
               <button class="btn-delete">Eliminar</button>
             `;
 
-            // botón eliminar
             div.querySelector(".btn-delete").addEventListener("click", async () => {
               if (confirm("¿Eliminar esta cita?")) {
                 await remove(ref(db, `appointments/${barbero}/${fecha}/${id}`));
@@ -105,7 +196,6 @@
     });
   }
 
-  cargarCitas();
 </script>
 
 </body>
