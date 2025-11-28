@@ -1,593 +1,112 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Panel Admin — LA ZONA DEL BARBERO</title>
-  <style>
-    /* ========================
-       VARIABLES & BASE
-       ======================== */
-    :root{
-      --bg:#030304; --bg-2:#071018; --card:#0e1115; --line:#1e252b;
-      --text:#e6eef3; --muted:#9aa0a6; --accent:#f6c358; --accent-2:#7be3a8;
-      --glass:rgba(255,255,255,0.03); --danger:#ef6b6b; --good:#35d19b;
-      --radius:14px; --stat-bg:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
-    }
-    .light { --bg:#f6f7f9; --bg-2:#ffffff; --card:#ffffff; --line:#e6e9ee; --text:#081019; --muted:#6b7280; --glass: rgba(0,0,0,0.04); }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
-      background:linear-gradient(180deg,var(--bg) 0%, var(--bg-2) 100%);
-      color:var(--text);
-      -webkit-font-smoothing:antialiased;
-      -webkit-overflow-scrolling:touch;
-    }
+<meta charset="UTF-8">
+<title>Panel Admin Simple</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-    /* ========================
-       SPLASH 1:1 (idéntico)
-       ======================== */
-    #splash{
-      position:fixed; inset:0;
-      background: linear-gradient(180deg,#030304 0%, #071422 100%);
-      display:grid; place-items:center; z-index:9999;
-      animation: fadeOut 1.2s ease 1.8s forwards;
-    }
-    #splash .ring{
-      width:120px;height:120px;border-radius:50%;position:relative;display:grid;place-items:center;
-      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.02), transparent);
-      box-shadow:0 8px 40px rgba(0,0,0,0.6);
-      border:6px solid rgba(255,255,255,0.03);
-    }
-    #splash .ring::before{ content:""; position:absolute; inset:6px; border-radius:50%; border:6px solid rgba(255,255,255,0.02);}
-    #splash .dot{
-      width:18px;height:18px;border-radius:50%;
-      background: linear-gradient(90deg,var(--accent),var(--accent-2));
-      box-shadow:0 6px 20px rgba(123,227,168,0.15);
-      animation: orbit 1.6s linear infinite; position:absolute;
-    }
-    @keyframes orbit { 0%{transform:translateX(-36px) rotate(0deg)} 50%{transform:translateX(36px) rotate(180deg)} 100%{transform:translateX(-36px) rotate(360deg)} }
-    @keyframes fadeOut { to { opacity:0; visibility:hidden } }
-
-    /* ========================
-       LAYOUT
-       ======================== */
-    .wrap{max-width:1200px;margin:28px auto;padding:20px;display:grid;grid-template-columns:1fr 360px;gap:20px}
-    @media(max-width:1000px){ .wrap{grid-template-columns:1fr;padding:14px} .rightCol{order:2} }
-    .brand{display:flex;align-items:center;gap:12px;font-weight:800;font-size:18px}
-    .brand .subtitle{font-weight:600;font-size:13px;color:var(--muted);margin-left:6px}
-
-    .card{background:var(--stat-bg);padding:16px;border-radius:var(--radius);border:1px solid var(--line);box-shadow:0 6px 30px rgba(0,0,0,0.45)}
-    .big-card{padding:18px;border-radius:16px}
-
-    h1,h2,h3,h4{margin:0}
-    .small{font-size:13px;color:var(--muted)}
-    .muted{color:var(--muted)}
-
-    /* ========================
-       STATS ROW
-       ======================== */
-    .stats{display:flex;gap:14px;margin-bottom:12px}
-    .stat{flex:1;padding:14px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);border:1px solid var(--line)}
-    .stat h3{font-size:20px;margin-bottom:6px}
-    .stat .label{font-size:12px;color:var(--muted)}
-
-    /* ========================
-       CONTROLS
-       ======================== */
-    .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
-    input.search{flex:1;padding:10px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--text)}
-    select, input[type=date]{padding:10px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--text)}
-    button.btn{padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--text);cursor:pointer}
-    button.primary{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#071018;border:none;font-weight:800}
-    button.small-btn{padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--text);cursor:pointer}
-
-    /* iOS glass button style (applied to .btn, button elements) */
-    button, .btn {
-      background: rgba(255,255,255,0.05);
-      backdrop-filter: blur(14px);
-      border: 1px solid rgba(255,255,255,0.08);
-      padding: 10px 14px;
-      border-radius: 12px;
-      color: var(--text);
-      font-weight: 600;
-      transition: 0.15s;
-    }
-    button:active, .btn:active { transform: scale(0.96); transition: transform 0.12s cubic-bezier(.25,.46,.45,.94); }
-    button:hover{ background: rgba(255,255,255,0.10); }
-
-    /* ========================
-       LIST & ITEMS (iOS cards)
-       ======================== */
-    .list{margin-top:6px;display:flex;flex-direction:column;gap:10px;max-height:62vh;overflow:auto;padding-right:6px; -webkit-overflow-scrolling: touch;}
-    .item{background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);padding:14px;border-radius:12px;border:1px solid var(--line);display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;touch-action:pan-y}
-    .item.compact{padding:10px}
-    .item .left{display:flex;flex-direction:column;gap:8px}
-    .item .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    .tag{background:rgba(255,255,255,0.03);padding:6px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.02);font-size:13px;color:var(--muted)}
-    .name{font-weight:800;font-size:16px}
-    .meta{font-size:13px;color:var(--muted)}
-    .right{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
-    .muted-2{color:#9ea9b2}
-    .kbd{background:rgba(255,255,255,0.02);padding:6px 8px;border-radius:8px;font-size:13px;border:1px solid var(--line)}
-
-    /* bottom sheet (hidden by default) */
-    .sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:none;align-items:flex-end;justify-content:center;z-index:1200}
-    .sheet{width:100%;max-width:720px;background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);border-radius:16px 16px 0 0;padding:18px;border-top:1px solid var(--line);box-shadow:0 -20px 60px rgba(0,0,0,0.6)}
-    .sheet .drag{width:36px;height:6px;background:rgba(255,255,255,0.06);border-radius:6px;margin:0 auto 8px auto}
-
-    /* swipe-to-delete overlay */
-    .swipe-wrap{position:relative;overflow:hidden}
-    .swipe-actions{position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;gap:8px;z-index:3}
-    .swipe-delete{background:var(--danger);color:#fff;padding:8px 10px;border-radius:10px;border:none}
-
-    /* toggle switch iOS */
-    .ios-switch{position:relative;width:54px;height:28px;display:inline-block}
-    .ios-switch input{opacity:0;width:0;height:0}
-    .ios-switch span{position:absolute;inset:0;background:#2b2f36;border-radius:30px;transition:.25s;box-shadow:inset 0 0 8px rgba(0,0,0,0.5)}
-    .ios-switch span::before{content:"";position:absolute;left:4px;top:4px;width:20px;height:20px;background:#fff;border-radius:50%;transition:.25s;box-shadow:0 4px 14px rgba(0,0,0,0.35)}
-    .ios-switch input:checked + span{background:linear-gradient(90deg,var(--accent),var(--accent-2))}
-    .ios-switch input:checked + span::before{transform:translateX(26px)}
-
-    /* compact adjustments mobile */
-    @media (max-width:480px){
-      .item{padding:10px}
-      .name{font-size:14px}
-      .tag{font-size:11px;padding:4px 8px}
-      .stats{flex-direction:column;gap:8px}
-      .brand div{font-size:15px}
-    }
-
-    /* card lift on hover for desktops */
-    @media(min-width:720px){
-      .item:hover{ transform: translateY(-6px); transition: transform .18s cubic-bezier(.2,.9,.2,1); box-shadow:0 12px 30px rgba(0,0,0,0.45) }
-    }
-
-  </style>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #111;
+    color: #fff;
+    padding: 20px;
+  }
+  .item {
+    background: #1b1b1b;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #333;
+  }
+  .btn-delete {
+    background: #e14d4d;
+    border: none;
+    padding: 8px 12px;
+    color: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+</style>
 </head>
-
 <body>
-  <!-- SPLASH 1:1 -->
-  <div id="splash">
-    <div class="ring"><div class="dot"></div></div>
-  </div>
 
-  <!-- MAIN WRAPPER -->
-  <div class="wrap">
+<h2>Lista de citas</h2>
+<p>(Lectura directa de Firebase Realtime Database)</p>
 
-    <!-- MAIN COLUMN -->
-    <div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div class="brand">
-          <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:grid;place-items:center;font-weight:900;color:#081019">LB</div>
-          <div>
-            <div style="font-weight:800">LA ZONA DEL BARBERO</div>
-            <div class="brand subtitle">Panel Admin — Citas</div>
-          </div>
-        </div>
+<div id="lista"></div>
 
-        <div style="display:flex;gap:8px;align-items:center">
-          <input id="filterInput" class="search" placeholder="Buscar por nombre, servicio, teléfono..." />
-          <select id="barberoFilter" title="Filtrar por barbero"><option value="">Todos los barberos</option></select>
-          <input id="dateFilter" type="date" title="Filtrar por fecha (YYYY-MM-DD)" />
-          <button id="btnExport" class="btn">Exportar CSV</button>
-          <button id="btnLogout" class="btn">Cerrar sesión</button>
-        </div>
-      </div>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-      <!-- STATS -->
-      <div class="stats">
-        <div class="stat card">
-          <div class="small">Total de citas</div>
-          <h3 id="statTotal">0</h3>
-        </div>
-        <div class="stat card">
-          <div class="small">Citas hoy</div>
-          <h3 id="statToday">0</h3>
-        </div>
-        <div class="stat card">
-          <div class="small">Citas por barbero</div>
-          <div id="statByBarber" class="small muted-2" style="margin-top:8px">-</div>
-        </div>
-        <div class="stat card">
-          <div class="small">Servicios top</div>
-          <div id="statTopServices" class="small muted-2" style="margin-top:8px">-</div>
-        </div>
-      </div>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAN8piM_UR3kLDUnJFYe5diazItfvYIlSA",
+    authDomain: "lazonadelbarbero-b4e75.firebaseapp.com",
+    databaseURL: "https://lazonadelbarbero-b4e75-default-rtdb.firebaseio.com",
+    projectId: "lazonadelbarbero-b4e75",
+    storageBucket: "lazonadelbarbero-b4e75.firebasestorage.app",
+    messagingSenderId: "251180096928",
+    appId: "1:251180096928:web:86d0ab83c7e444af79d8c5",
+    measurementId: "G-G4YL7M4Z00"
+  };
 
-      <!-- LIST CARD -->
-      <div class="card big-card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <div><h2 style="margin:0">Lista de citas</h2><div class="small">Lectura en tiempo real — Realtime DB</div></div>
-          <div style="display:flex;gap:8px">
-            <button id="btnRefresh" class="btn">Forzar actualizar</button>
-            <label class="ios-switch" title="Modo claro/oscuro">
-              <input type="checkbox" id="themeToggle">
-              <span></span>
-            </label>
-            <label class="ios-switch" title="Compact / Full">
-              <input type="checkbox" id="compactToggle">
-              <span></span>
-            </label>
-          </div>
-        </div>
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
 
-        <div id="list" class="list" aria-live="polite"><!-- items --></div>
-      </div>
-    </div>
+  const lista = document.getElementById("lista");
 
-    <!-- RIGHT COLUMN -->
-    <aside class="rightCol">
-      <div class="card">
-        <h4>Filtros rápidos</h4>
-        <div style="height:8px"></div>
-        <div class="small">Barbero</div>
-        <select id="sideBarbero"><option value="">Todos</option></select>
-        <div style="height:10px"></div>
-        <div class="small">Fecha</div>
-        <input id="sideDate" type="date" />
-        <div style="height:10px"></div>
-        <div class="small">Buscar</div>
-        <input id="sideSearch" class="search" placeholder="Buscar..." />
-      </div>
+  function cargarCitas() {
+    const refCitas = ref(db, "appointments");
 
-      <div class="card summary-list">
-        <h4>Acciones</h4>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button id="exportCSV" class="btn">Exportar CSV</button>
-          <button id="compactView" class="btn">Compact / Full</button>
-        </div>
-        <div style="height:10px"></div>
-        <div class="small muted">Atajo: usa el filtro por fecha para ver solo un día.</div>
-      </div>
+    onValue(refCitas, snap => {
+      lista.innerHTML = "";
 
-      <div class="card">
-        <h4>Ayuda rápida</h4>
-        <div class="small" style="margin-top:8px">Eliminar quita la cita de la Realtime DB. El panel usa la ruta:</div>
-        <div class="kbd" style="margin-top:8px">appointments/{barbero}/{YYYY-MM-DD}/{id}</div>
-      </div>
-    </aside>
-  </div>
+      const data = snap.val();
+      if (!data) {
+        lista.innerHTML = "<p>No hay citas guardadas.</p>";
+        return;
+      }
 
-  <!-- BOTTOM SHEET -->
-  <div id="sheetBackdrop" class="sheet-backdrop">
-    <div class="sheet" role="dialog" aria-modal="true">
-      <div class="drag"></div>
-      <div id="sheetContent"></div>
-      <div style="height:10px"></div>
-      <div style="display:flex;gap:8px;justify-content:flex-end">
-        <button id="sheetClose" class="btn">Cerrar</button>
-      </div>
-    </div>
-  </div>
+      for (const barbero in data) {
+        for (const fecha in data[barbero]) {
+          for (const id in data[barbero][fecha]) {
 
-  <!-- SCRIPTS -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+            const c = data[barbero][fecha][id];
 
-    /* ===== FIREBASE (TU CONFIG) ===== */
-    const firebaseConfig = {
-      apiKey: "AIzaSyAN8piM_UR3kLDUnJFYe5diazItfvYIlSA",
-      authDomain: "lazonadelbarbero-b4e75.firebaseapp.com",
-      databaseURL: "https://lazonadelbarbero-b4e75-default-rtdb.firebaseio.com",
-      projectId: "lazonadelbarbero-b4e75",
-      storageBucket: "lazonadelbarbero-b4e75.firebasestorage.app",
-      messagingSenderId: "251180096928",
-      appId: "1:251180096928:web:86d0ab83c7e444af79d8c5",
-      measurementId: "G-G4YL7M4Z00"
-    };
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+            const div = document.createElement("div");
+            div.className = "item";
 
-    /* ===== AUTH SIMPLE ===== */
-    const ACCESS_KEY = "LAZONADELBARBERO2025";
-    (function askKey(){
-      const saved = sessionStorage.getItem('admin_auth');
-      if(saved === ACCESS_KEY){ init(); return; }
-      const k = prompt('Clave administrador:');
-      if(k === ACCESS_KEY){ sessionStorage.setItem('admin_auth', ACCESS_KEY); init(); return; }
-      alert('Clave incorrecta. Recarga para intentar de nuevo.'); document.body.innerHTML = '<div style="padding:24px;color:#fff">Acceso denegado.</div>';
-    })();
+            div.innerHTML = `
+              <strong>${c.nombre || "Sin nombre"}</strong><br>
+              Barbero: ${barbero}<br>
+              Servicio: ${c.servicio}<br>
+              Fecha: ${fecha}<br>
+              Hora: ${c.startMinutes} min<br>
+              Tel: ${c.telefono}<br>
+              Email: ${c.email}<br>
+              Precio: ${c.priceCOP}<br>
+              Creado: ${c.createdAt}<br>
+              <button class="btn-delete">Eliminar</button>
+            `;
 
-    /* ===== DOM Refs ===== */
-    const splash = document.getElementById('splash');
-    const listEl = document.getElementById('list');
-    const statTotal = document.getElementById('statTotal');
-    const statToday = document.getElementById('statToday');
-    const statByBarber = document.getElementById('statByBarber');
-    const statTopServices = document.getElementById('statTopServices');
-    const filterInput = document.getElementById('filterInput');
-    const barberoFilter = document.getElementById('barberoFilter');
-    const dateFilter = document.getElementById('dateFilter');
-    const btnExport = document.getElementById('btnExport');
-    const btnRefresh = document.getElementById('btnRefresh');
-    const btnLogout = document.getElementById('btnLogout');
-    const sideBarbero = document.getElementById('sideBarbero');
-    const sideDate = document.getElementById('sideDate');
-    const sideSearch = document.getElementById('sideSearch');
-    const btnClearDate = document.getElementById('btnClearDate');
-    const exportCSVBtn = document.getElementById('exportCSV');
-    const compactViewToggle = document.getElementById('compactToggle');
-    const themeToggle = document.getElementById('themeToggle');
-    const compactBtn = document.getElementById('compactView');
-    const sheetBackdrop = document.getElementById('sheetBackdrop');
-    const sheetContent = document.getElementById('sheetContent');
-    const sheetClose = document.getElementById('sheetClose');
+            // botón eliminar
+            div.querySelector(".btn-delete").addEventListener("click", async () => {
+              if (confirm("¿Eliminar esta cita?")) {
+                await remove(ref(db, `appointments/${barbero}/${fecha}/${id}`));
+              }
+            });
 
-    let snapshotFlat = []; // flat array of {id, barbero, date, data}
-    let barberoSet = new Set();
-    let compactView = false;
-
-    /* ===== Helpers ===== */
-    function minutesToTime(m){ const hh=String(Math.floor(m/60)).padStart(2,'0'); const mm=String(m%60).padStart(2,'0'); return `${hh}:${mm}`; }
-    function minutesToShortAmPm(m){ const hh=Math.floor(m/60); const mm=m%60; const isPM=hh>=12; let h12=hh%12; if(h12===0) h12=12; const mmPart=mm===0 ? '' : `:${String(mm).padStart(2,'0')}`; return `${h12}${mmPart}${isPM ? 'pm' : 'am'}`; }
-    function fmtPrice(p){ return p ? '$' + Number(p).toLocaleString('es-CO') : '-'; }
-    function fmtCreated(ts){ try{ return ts ? new Date(Number(ts)).toLocaleString() : 'N/A'; }catch(e){return 'N/A'} }
-
-    function flattenData(snapshotVal){
-      const out=[];
-      if(!snapshotVal) return out;
-      for(const barbero of Object.keys(snapshotVal)){
-        const byDate = snapshotVal[barbero];
-        for(const date of Object.keys(byDate)){
-          const dayObj = byDate[date];
-          for(const id of Object.keys(dayObj)){
-            const d = dayObj[id];
-            out.push({ id, barbero, date, data: d });
+            lista.appendChild(div);
           }
         }
       }
-      out.sort((a,b)=>{ if(a.date<b.date) return -1; if(a.date>b.date) return 1; return Number(a.data.startMinutes||0)-Number(b.data.startMinutes||0) });
-      return out;
-    }
+    });
+  }
 
-    /* ===== Render list ===== */
-    function renderList(items){
-      listEl.innerHTML='';
-      if(items.length===0){ listEl.innerHTML='<div class="small muted">No hay citas.</div>'; return; }
-      for(const it of items){
-        const d = it.data;
-        const start = Number(d.startMinutes||0);
-        const dur = Number(d.durationMinutes||d.duration||0);
-        const price = d.priceCOP||d.price||'';
-        const created = d.createdAt||d.created||'';
+  cargarCitas();
+</script>
 
-        const itemWrap = document.createElement('div');
-        itemWrap.className='swipe-wrap';
-
-        const item = document.createElement('div');
-        item.className = 'item' + (compactView? ' compact':'');
-        item.innerHTML = `
-          <div class="left">
-            <div style="display:flex;align-items:center;gap:12px">
-              <div class="name">${d.nombre || '-'}</div>
-              <div class="tag">${it.barbero}</div>
-              <div class="tag">${d.servicio || '-'}</div>
-              <div class="meta" style="margin-left:8px">${it.date} · ${minutesToTime(start)}</div>
-            </div>
-            <div class="row" style="margin-top:8px">
-              <div class="tag">Hora: ${minutesToShortAmPm(start)}</div>
-              <div class="tag">Duración: ${dur} min</div>
-              <div class="tag">Precio: ${fmtPrice(price)}</div>
-              <div class="tag">Tel: ${d.telefono || '-'}</div>
-              <div class="tag">Email: ${d.email || '-'}</div>
-              <div class="tag">Creado: ${fmtCreated(created)}</div>
-            </div>
-          </div>
-          <div class="right">
-            <div class="small muted">${d.servicio || ''}</div>
-            <div style="display:flex;gap:8px">
-              <button class="small-btn btn-detail" title="Ver detalles">Ver</button>
-              <button class="small-btn btn-wa" title="Abrir WhatsApp">WA</button>
-            </div>
-          </div>
-        `;
-
-        // actions container (swipe reveal)
-        const actions = document.createElement('div');
-        actions.className = 'swipe-actions';
-        actions.innerHTML = `<button class="swipe-delete">Eliminar</button>`;
-
-        itemWrap.appendChild(item);
-        itemWrap.appendChild(actions);
-        listEl.appendChild(itemWrap);
-
-        // detail button
-        item.querySelector('.btn-detail').addEventListener('click', ()=> openSheet(it) );
-
-        // whatsapp button
-        item.querySelector('.btn-wa').addEventListener('click', ()=>{
-          const phone = (d.telefono||'').replace(/\D/g,'');
-          if(!phone) return alert('Teléfono no disponible');
-          const msg = `Hola, soy ${d.nombre || ''} — referente a tu cita en La Zona del Barbero.`;
-          window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`, '_blank');
-        });
-
-        // delete action (visible)
-        actions.querySelector('.swipe-delete').addEventListener('click', async ()=>{
-          if(!confirm('Eliminar cita? Esta acción NO se puede deshacer.')) return;
-          try{ await remove(ref(db, `appointments/${it.barbero}/${it.date}/${it.id}`)); }catch(err){ console.error(err); alert('Error eliminando cita.'); }
-        });
-
-        // swipe-to-delete (touch)
-        addSwipeHandlers(itemWrap, item, actions);
-      }
-    }
-
-    /* ===== swipe handlers (mobile) ===== */
-    function addSwipeHandlers(wrapper, content, actionsEl){
-      let startX=0, currentX=0, touching=false;
-      const threshold = 60; // px to reveal
-      wrapper.addEventListener('touchstart', (e)=>{
-        if(e.touches.length!==1) return;
-        startX = e.touches[0].clientX; touching=true;
-        content.style.transition='none';
-      }, {passive:true});
-      wrapper.addEventListener('touchmove', (e)=>{
-        if(!touching) return;
-        currentX = e.touches[0].clientX - startX;
-        if(currentX < 0){ // left swipe
-          const translate = Math.max(currentX, -120);
-          content.style.transform = `translateX(${translate}px)`;
-        }
-      }, {passive:true});
-      wrapper.addEventListener('touchend', (e)=>{
-        touching=false;
-        content.style.transition='transform .18s cubic-bezier(.2,.9,.2,1)';
-        if(currentX < -threshold){ content.style.transform='translateX(-120px)'; } else { content.style.transform='translateX(0)'; }
-        currentX=0;
-      });
-      // allow click outside to close
-      content.addEventListener('click', ()=>{ if(content.style.transform && content.style.transform !== 'translateX(0px)') { content.style.transform='translateX(0)'; } });
-    }
-
-    /* ===== Bottom sheet (detail) ===== */
-    function openSheet(it){
-      const d = it.data;
-      sheetContent.innerHTML = `
-        <h3 style="margin-top:0">${d.nombre || 'Cliente'}</h3>
-        <div class="small muted">${it.barbero} · ${it.date} · ${minutesToShortAmPm(Number(d.startMinutes||0))}</div>
-        <div style="height:12px"></div>
-        <div><strong>Servicio:</strong> ${d.servicio || '-'}</div>
-        <div><strong>Duración:</strong> ${d.durationMinutes || d.duration || '-'} min</div>
-        <div><strong>Precio:</strong> ${fmtPrice(d.priceCOP || d.price)}</div>
-        <div style="height:8px"></div>
-        <div><strong>Tel:</strong> ${d.telefono || '-'}</div>
-        <div><strong>Email:</strong> ${d.email || '-'}</div>
-        <div style="height:8px"></div>
-        <div><strong>Creado:</strong> ${fmtCreated(d.createdAt || d.created)}</div>
-        <div style="height:12px"></div>
-        <div style="display:flex;gap:8px;justify-content:flex-end">
-          <button id="sheetWA" class="btn">Abrir WhatsApp</button>
-          <button id="sheetDelete" class="btn" style="background:var(--danger);color:#fff">Eliminar</button>
-        </div>
-      `;
-      // handlers
-      document.getElementById('sheetWA').addEventListener('click', ()=>{
-        const phone = (d.telefono||'').replace(/\D/g,'');
-        if(!phone) return alert('Teléfono no disponible');
-        window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent('Hola, respecto a su cita')}`, '_blank');
-      });
-      document.getElementById('sheetDelete').addEventListener('click', async ()=>{
-        if(!confirm('Eliminar cita?')) return;
-        try{ await remove(ref(db, `appointments/${it.barbero}/${it.date}/${it.id}`)); sheetBackdrop.style.display='none'; }catch(err){ console.error(err); alert('Error eliminando cita'); }
-      });
-
-      sheetBackdrop.style.display='flex';
-      // allow backdrop click to close
-      sheetBackdrop.addEventListener('click', (ev)=>{ if(ev.target === sheetBackdrop) sheetBackdrop.style.display='none'; });
-    }
-    sheetClose.addEventListener('click', ()=> sheetBackdrop.style.display='none');
-
-    /* ===== compute stats ===== */
-    function computeStats(flat){
-      const total = flat.length;
-      const todayISO = (new Date()).toISOString().slice(0,10);
-      let todayCount = 0;
-      const byBarber = {};
-      const services = {};
-      flat.forEach(it=>{
-        const d = it.data; const date = it.date;
-        if(date === todayISO) todayCount++;
-        byBarber[it.barbero] = (byBarber[it.barbero]||0) + 1;
-        const s = (d.servicio || '—'); services[s] = (services[s]||0) + 1;
-      });
-      const topServices = Object.entries(services).sort((a,b)=>b[1]-a[1]).slice(0,4).map(x=>`${x[0]} (${x[1]})`).join(' · ') || '-';
-      const byBarberText = Object.entries(byBarber).map(x=>`${x[0]}: ${x[1]}`).join(' · ') || '-';
-      statTotal.textContent = total; statToday.textContent = todayCount; statByBarber.textContent = byBarberText; statTopServices.textContent = topServices;
-    }
-
-    /* ===== Filters ===== */
-    function applyFilters(){
-      const q = (filterInput.value || '').trim().toLowerCase();
-      const barFilter = barberoFilter.value || '';
-      const dateF = dateFilter.value || '';
-      const sideBar = sideBarbero.value || '';
-      const sideDateVal = sideDate.value || '';
-      const sideQ = (sideSearch.value || '').trim().toLowerCase();
-
-      let items = snapshotFlat.slice();
-      const useDate = sideDateVal || dateF;
-      if(useDate) items = items.filter(it => it.date === useDate);
-      const useBar = sideBar || barFilter;
-      if(useBar) items = items.filter(it => it.barbero === useBar);
-      if(q) items = items.filter(it => JSON.stringify(it).toLowerCase().includes(q));
-      if(sideQ) items = items.filter(it => JSON.stringify(it).toLowerCase().includes(sideQ));
-      renderList(items);
-      return items;
-    }
-
-    /* ===== Export CSV ===== */
-    function exportCSV(items){
-      if(!items || items.length===0){ alert('No hay datos para exportar.'); return; }
-      const header = ['barbero','date','startMinutes','startHH:MM','servicio','durationMinutes','nombre','telefono','email','priceCOP','createdAt'];
-      const rows = items.map(it=>{
-        const d = it.data; const start = Number(d.startMinutes||0);
-        return [
-          it.barbero, it.date, start, minutesToTime(start), (d.servicio||''), (d.durationMinutes||d.duration||''), (d.nombre||''), (d.telefono||''), (d.email||''), (d.priceCOP||d.price||''), (d.createdAt||'')
-        ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',');
-      });
-      const csv = [header.join(','), ...rows].join('\n');
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = `citas_${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(url);
-    }
-
-    /* ===== Realtime listener & init ===== */
-    function init(){
-      setTimeout(()=>{ document.getElementById('splash')?.remove(); }, 700);
-
-      const baseRef = ref(db, 'appointments');
-      onValue(baseRef, (snap)=>{
-        const val = snap.val();
-        snapshotFlat = flattenData(val);
-
-        barberoSet = new Set(snapshotFlat.map(s=>s.barbero));
-        populateBarberoFilters();
-        computeStats(snapshotFlat);
-        applyFilters();
-      });
-
-      // UI events
-      filterInput.addEventListener('input', applyFilters);
-      barberoFilter.addEventListener('change', applyFilters);
-      dateFilter.addEventListener('change', applyFilters);
-      sideBarbero.addEventListener('change', ()=>{ dateFilter.value = sideDate.value; applyFilters(); });
-      sideDate.addEventListener('change', ()=>{ dateFilter.value = sideDate.value; applyFilters(); });
-      sideSearch.addEventListener('input', applyFilters);
-
-      btnRefresh.addEventListener('click', ()=>{ applyFilters(); alert('Actualizado'); });
-      btnExport.addEventListener('click', ()=> exportCSV(applyFilters()));
-      exportCSVBtn.addEventListener('click', ()=> exportCSV(applyFilters()));
-      btnLogout.addEventListener('click', ()=>{ sessionStorage.removeItem('admin_auth'); location.reload(); });
-
-      compactBtn.addEventListener('click', ()=>{ compactView = !compactView; applyFilters(); compactBtn.textContent = compactView ? 'Full View' : 'Compact / Full'; });
-      compactViewToggle.addEventListener('change', (e)=>{ compactView = e.target.checked; applyFilters(); });
-      themeToggle.addEventListener('change', (e)=>{ document.body.classList.toggle('light', e.target.checked); });
-
-      // auto-detect prefers-color-scheme
-      if(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) { document.body.classList.add('light'); themeToggle.checked = true; }
-    }
-
-    function populateBarberoFilters(){
-      const arr = Array.from(barberoSet).sort();
-      barberoFilter.innerHTML = '<option value="">Todos los barberos</option>';
-      sideBarbero.innerHTML = '<option value="">Todos</option>';
-      arr.forEach(b=>{
-        const o=document.createElement('option'); o.value=b; o.textContent=b; barberoFilter.appendChild(o);
-        const o2=document.createElement('option'); o2.value=b; o2.textContent=b; sideBarbero.appendChild(o2);
-      });
-    }
-
-    // start
-    init();
-
-    /* ===== small helpers to support other behaviors if needed ===== */
-    window.exportFilteredCSV = ()=> exportCSV(applyFilters());
-
-  </script>
 </body>
 </html>
