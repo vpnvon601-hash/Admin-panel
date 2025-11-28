@@ -53,9 +53,7 @@ body {
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
-@keyframes fadeOut {
-  to { opacity: 0; visibility: hidden; }
-}
+@keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
 
 /* ------------------------
    LAYOUT
@@ -66,64 +64,15 @@ body {
   padding: 22px;
 }
 
-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-h1 {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 600;
-}
-
-/* Apple Cards */
 .card {
   background: var(--card);
   backdrop-filter: blur(var(--blur));
   border: 1px solid var(--border);
   border-radius: 18px;
   padding: 20px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.25);
 }
 
-/* Login */
-.auth-box {
-  max-width: 420px;
-  margin: 80px auto;
-}
-
-/* Inputs */
-input {
-  width: 100%;
-  padding: 12px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: rgba(255,255,255,0.05);
-  color: var(--accent);
-}
-
-/* Buttons */
-button {
-  cursor: pointer;
-  border-radius: 12px;
-  padding: 10px 14px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.06);
-  color: var(--accent);
-  font-weight: 500;
-}
-
-button:hover { background: rgba(255,255,255,0.12); }
-
-button.danger {
-  background: var(--danger);
-  border: none;
-  color: #fff;
-}
-
-/* Citas */
+/* Lista */
 .list { margin-top: 18px; }
 
 .item {
@@ -144,6 +93,20 @@ button.danger {
   border-radius: 10px;
   font-size: 13px;
 }
+
+button {
+  cursor: pointer;
+  border-radius: 10px;
+  padding: 8px 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.06);
+  color: white;
+}
+
+button.danger {
+  background: var(--danger);
+  border: none;
+}
 </style>
 </head>
 
@@ -155,7 +118,7 @@ button.danger {
 </div>
 
 <!-- LOGIN -->
-<div id="login" class="wrap auth-box card">
+<div id="login" class="wrap card" style="max-width:420px; margin-top:80px;">
   <h2>Panel Admin</h2>
   <input id="passwordInput" type="password" placeholder="Contraseña">
   <br><br>
@@ -164,18 +127,14 @@ button.danger {
 
 <!-- PANEL -->
 <div id="panel" class="wrap" style="display:none;">
-  <header>
-    <h1>Citas</h1>
-    <button onclick="logout()">Salir</button>
-  </header>
-
   <div class="card">
+    <h1>Citas</h1>
     <input id="search" type="text" placeholder="Buscar…">
     <div id="list" class="list"></div>
   </div>
 </div>
 
-<!-- FIREBASE + LÓGICA -->
+<!-- FIREBASE -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -197,23 +156,27 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+const PASSWORD = "LAZONADELBARBERO2025";
+
 /* ------------------------------
    🔐 LOGIN
 ------------------------------ */
-const PASSWORD = "LAZONADELBARBERO2025";
-
 window.login = function () {
-  let val = document.getElementById("passwordInput").value;
-  if (val === PASSWORD) {
+  if (document.getElementById("passwordInput").value === PASSWORD) {
     document.getElementById("login").style.display = "none";
     document.getElementById("panel").style.display = "block";
     loadCitas();
-  } else {
-    alert("Contraseña incorrecta");
-  }
+  } else alert("Contraseña incorrecta");
 };
 
-window.logout = () => location.reload();
+/* ------------------------------
+   ⏱ convertir minutos → hora
+------------------------------ */
+function minutesToTime(m) {
+  const hh = String(Math.floor(m / 60)).padStart(2, "0");
+  const mm = String(m % 60).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
 
 /* ------------------------------
    📌 CARGAR CITAS
@@ -239,10 +202,27 @@ function loadCitas() {
             <div class="item">
               <div>
                 <strong>${c.nombre}</strong><br>
-                <span class="tag">${barbero}</span>
-                <span class="tag">${fecha}</span>
-                <span class="tag">${c.startMinutes} min</span>
+
+                <span class="tag">Barbero: ${barbero}</span>
+                <span class="tag">Servicio: ${c.servicio}</span>
+                <span class="tag">Fecha: ${fecha}</span>
+
+                <br><br>
+
+                <span class="tag">Hora: ${minutesToTime(c.startMinutes)}</span>
+                <span class="tag">Duración: ${c.durationMinutes} min</span>
+
+                <br><br>
+
+                <span class="tag">Tel: ${c.telefono}</span>
+                <span class="tag">Email: ${c.email || "-"}</span>
+                <span class="tag">Precio: ${c.priceCOP ? "$" + c.priceCOP : "-"}</span>
+
+                <br><br>
+
+                <span class="tag">Creado: ${c.createdAt ? new Date(c.createdAt).toLocaleString() : "N/A"}</span>
               </div>
+
               <button class="danger" onclick="del('${barbero}','${fecha}','${id}')">Eliminar</button>
             </div>
           `;
@@ -259,9 +239,7 @@ function loadCitas() {
 ------------------------------ */
 window.del = function (barbero, fecha, id) {
   if (!confirm("¿Eliminar cita?")) return;
-
-  const path = `appointments/${barbero}/${fecha}/${id}`;
-  remove(ref(db, path));
+  remove(ref(db, `appointments/${barbero}/${fecha}/${id}`));
 };
 
 /* ------------------------------
