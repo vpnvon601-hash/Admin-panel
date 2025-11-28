@@ -1,204 +1,279 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Panel Admin — LA ZONA DEL BARBERO</title>
-  <style>
-    :root{--bg:#0b0f12;--card:#0f1720;--muted:#9aa4b2;--accent:#e6e6e6;--danger:#ef4444;--border:#1f2937}
-    *{box-sizing:border-box}
-    body{margin:0;font-family:Inter,Arial;background:var(--bg);color:var(--accent)}
-    .wrap{max-width:1100px;margin:28px auto;padding:18px}
-    header{display:flex;align-items:center;justify-content:space-between;gap:12px}
-    h1{margin:0;font-size:20px}
-    .card{background:var(--card);border-radius:12px;padding:14px;border:1px solid var(--border)}
-    .auth-box{max-width:420px;margin:70px auto;padding:18px;background:#0c1720;border-radius:10px;border:1px solid var(--border)}
-    input[type=password], input.search{width:100%;padding:10px;border-radius:8px;border:1px solid #22303b;background:#071014;color:var(--accent)}
-    button{cursor:pointer;border-radius:8px;padding:8px 10px;border:1px solid rgba(255,255,255,0.03);background:#0b2540;color:var(--accent);font-weight:600}
-    button.ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
-    button.danger{background:var(--danger);color:#fff;border:none;padding:8px 10px;border-radius:8px}
-    .small{font-size:13px;color:var(--muted)}
-    .list{margin-top:12px}
-    .group{margin-bottom:18px}
-    .item{display:grid;grid-template-columns:1fr auto;gap:12px;padding:12px;border-bottom:1px solid var(--border);align-items:center}
-    .tag{background:#0b1a28;padding:6px 8px;border-radius:8px;border:1px solid #12202a;font-size:13px}
-    @media(max-width:720px){.item{grid-template-columns:1fr;gap:8px}}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin - La Zona del Barbero</title>
+
+<style>
+/* ------------------------
+   🎨 APPLE DARK THEME
+------------------------ */
+:root {
+  --bg: #0d0e11;
+  --card: rgba(255,255,255,0.04);
+  --blur: 18px;
+  --border: rgba(255,255,255,0.08);
+  --text: #e5e7eb;
+  --muted: #94a3b8;
+  --accent: #ffffff;
+  --danger: #ef4444;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, Inter, Arial;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ------------------------
+   🚀 SPLASH SCREEN
+------------------------ */
+#splash {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  animation: fadeOut 1.1s ease 1.6s forwards;
+}
+
+.loader {
+  width: 70px;
+  height: 70px;
+  border: 4px solid rgba(255,255,255,0.15);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeOut {
+  to { opacity: 0; visibility: hidden; }
+}
+
+/* ------------------------
+   LAYOUT
+------------------------ */
+.wrap {
+  max-width: 1100px;
+  margin: 32px auto;
+  padding: 22px;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+/* Apple Cards */
+.card {
+  background: var(--card);
+  backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+}
+
+/* Login */
+.auth-box {
+  max-width: 420px;
+  margin: 80px auto;
+}
+
+/* Inputs */
+input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.05);
+  color: var(--accent);
+}
+
+/* Buttons */
+button {
+  cursor: pointer;
+  border-radius: 12px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.06);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+button:hover { background: rgba(255,255,255,0.12); }
+
+button.danger {
+  background: var(--danger);
+  border: none;
+  color: #fff;
+}
+
+/* Citas */
+.list { margin-top: 18px; }
+
+.item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  padding: 18px 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.item:hover {
+  background: rgba(255,255,255,0.03);
+  border-radius: 12px;
+}
+
+.tag {
+  background: rgba(255,255,255,0.08);
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+</style>
 </head>
+
 <body>
-  <div class="wrap">
-    <header>
-      <div>
-        <h1>Panel de Citas — LA ZONA DEL BARBERO</h1>
-        <div class="small">Acceso restringido — Lectura en tiempo real (Realtime DB)</div>
-      </div>
-      <div style="width:360px"><input id="filterInput" class="search" placeholder="Filtrar por nombre, barbero, servicio o teléfono" /></div>
-    </header>
 
-    <div id="authBox" class="auth-box card" aria-live="polite">
-      <h3 style="margin:0 0 8px 0">Acceso de administrador</h3>
-      <div class="small">Introduce la clave para ver el panel.</div>
-      <div style="height:10px"></div>
-      <input type="password" id="adminKey" placeholder="Clave de acceso" />
-      <div style="height:10px"></div>
-      <button id="btnAcceder">Entrar</button>
-      <div id="authMsg" class="small" style="margin-top:10px"></div>
-    </div>
+<!-- SPLASH -->
+<div id="splash">
+  <div class="loader"></div>
+</div>
 
-    <div id="panel" class="card" style="display:none">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div class="small">Panel activo</div>
-          <div style="height:6px"></div>
-          <div class="small">Ruta: <code>/appointments/{barbero}/{YYYY-MM-DD}/{startMinutes}</code></div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button id="btnRefresh" class="ghost">Forzar actualizar</button>
-          <button id="btnLogout" class="ghost">Cerrar sesión</button>
-        </div>
-      </div>
+<!-- LOGIN -->
+<div id="login" class="wrap auth-box card">
+  <h2>Panel Admin</h2>
+  <input id="passwordInput" type="password" placeholder="Contraseña">
+  <br><br>
+  <button onclick="login()">Entrar</button>
+</div>
 
-      <div id="listContainer" class="list"></div>
-      <div id="emptyNotice" class="small" style="display:none;margin-top:12px">No hay citas.</div>
-    </div>
+<!-- PANEL -->
+<div id="panel" class="wrap" style="display:none;">
+  <header>
+    <h1>Citas</h1>
+    <button onclick="logout()">Salir</button>
+  </header>
+
+  <div class="card">
+    <input id="search" type="text" placeholder="Buscar…">
+    <div id="list" class="list"></div>
   </div>
+</div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, onValue, remove, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+<!-- FIREBASE + LÓGICA -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    // === CONFIGURA AQUÍ TU FIREBASE ===
-    const firebaseConfig = {
-      apiKey: "AIzaSyAN8piM_UR3kLDUnJFYe5diazItfvYIlSA",
-      authDomain: "lazonadelbarbero-b4e75.firebaseapp.com",
-      databaseURL: "https://lazonadelbarbero-b4e75-default-rtdb.firebaseio.com",
-      projectId: "lazonadelbarbero-b4e75",
-      storageBucket: "lazonadelbarbero-b4e75.firebasestorage.app",
-      messagingSenderId: "251180096928",
-      appId: "1:251180096928:web:86d0ab83c7e444af79d8c5",
-      measurementId: "G-G4YL7M4Z00"
-    };
+/* ------------------------------
+   🔥 TU CONFIG FIREBASE
+------------------------------ */
+const firebaseConfig = {
+  apiKey: "AIzaSyAN8piM_UR3kLDUnJFYe5diazItfvYIlSA",
+  authDomain: "lazonadelbarbero-b4e75.firebaseapp.com",
+  databaseURL: "https://lazonadelbarbero-b4e75-default-rtdb.firebaseio.com",
+  projectId: "lazonadelbarbero-b4e75",
+  storageBucket: "lazonadelbarbero-b4e75.firebasestorage.app",
+  messagingSenderId: "251180096928",
+  appId: "1:251180096928:web:86d0ab83c7e444af79d8c5",
+  measurementId: "G-G4YL7M4Z00"
+};
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-    // DOM
-    const ACCESS_KEY = "LAZONADELBARBERO2025";
-    const authBox = document.getElementById('authBox');
-    const adminKey = document.getElementById('adminKey');
-    const btnAcceder = document.getElementById('btnAcceder');
-    const authMsg = document.getElementById('authMsg');
-    const panel = document.getElementById('panel');
-    const listContainer = document.getElementById('listContainer');
-    const emptyNotice = document.getElementById('emptyNotice');
-    const btnRefresh = document.getElementById('btnRefresh');
-    const btnLogout = document.getElementById('btnLogout');
-    const filterInput = document.getElementById('filterInput');
+/* ------------------------------
+   🔐 LOGIN
+------------------------------ */
+const PASSWORD = "LAZONADELBARBERO2025";
 
-    let listeners = []; // to detach on logout
-    let snapshotData = []; // flat array of {id, barbero, date, startMinutes, data}
+window.login = function () {
+  let val = document.getElementById("passwordInput").value;
+  if (val === PASSWORD) {
+    document.getElementById("login").style.display = "none";
+    document.getElementById("panel").style.display = "block";
+    loadCitas();
+  } else {
+    alert("Contraseña incorrecta");
+  }
+};
 
-    function minutesToTime(m){ const hh=String(Math.floor(m/60)).padStart(2,'0'); const mm=String(m%60).padStart(2,'0'); return `${hh}:${mm}`; }
+window.logout = () => location.reload();
 
-    // render flat list
-    function renderList(flat){
-      listContainer.innerHTML = '';
-      if(flat.length === 0){ emptyNotice.style.display='block'; return; } else emptyNotice.style.display='none';
-      flat.forEach(item=>{
-        const data = item.data;
-        const hora = minutesToTime(Number(data.startMinutes));
-        const block = document.createElement('div'); block.className='item';
-        const left = document.createElement('div'); left.style.display='flex'; left.style.flexDirection='column';
-        left.innerHTML = `
-          <div style="display:flex;gap:12px;align-items:center">
-            <div style="font-weight:700">${data.nombre}</div>
-            <div class="tag">${item.barbero}</div>
-            <div class="small" style="margin-left:8px">${item.date} · ${hora}</div>
-          </div>
-          <div style="display:flex;gap:12px;margin-top:6px;flex-wrap:wrap">
-            <div class="small">${data.servicio}</div>
-            <div class="small">Duración: ${data.durationMinutes} min</div>
-            <div class="small">Tel: ${data.telefono}</div>
-            <div class="small">Email: ${data.email || '-'}</div>
-            <div class="small">Precio: ${data.priceCOP ? '$' + Number(data.priceCOP).toLocaleString('es-CO') : '-'}</div>
-          </div>
-        `;
-        const right = document.createElement('div'); right.style.display='flex'; right.style.gap='8px'; right.style.alignItems='center';
-        const btnDel = document.createElement('button'); btnDel.className='danger'; btnDel.textContent='Eliminar';
-        btnDel.onclick = async ()=>{
-          if(!confirm('Eliminar cita? Esta acción no se puede deshacer.')) return;
-          try{
-            const path = `appointments/${item.barbero}/${item.date}/${item.id}`;
-            await remove(ref(db, path));
-            alert('Cita eliminada.');
-          } catch(err){ console.error(err); alert('Error eliminando cita.'); }
-        };
-        right.appendChild(btnDel);
-        block.appendChild(left); block.appendChild(right);
-        listContainer.appendChild(block);
-      });
+/* ------------------------------
+   📌 CARGAR CITAS
+------------------------------ */
+function loadCitas() {
+  const citasRef = ref(db, "appointments");
+
+  onValue(citasRef, (snap) => {
+    const data = snap.val();
+    let html = "";
+
+    if (!data) {
+      document.getElementById("list").innerHTML = "<p>No hay citas.</p>";
+      return;
     }
 
-    // attach listener on full appointments tree and flatten
-    function attachRealtime(){
-      // detach previous
-      listeners.forEach(u => u()); listeners = [];
-      snapshotData = [];
-      const baseRef = ref(db, 'appointments');
-      // listen for value on base - whenever data changes we rebuild flat list
-      const unsub = onValue(baseRef, (snap)=>{
-        const val = snap.val();
-        const flat = [];
-        if(val){
-          for(const barbero of Object.keys(val)){
-            const byDate = val[barbero];
-            for(const date of Object.keys(byDate)){
-              const dayObj = byDate[date];
-              for(const id of Object.keys(dayObj)){
-                flat.push({ id, barbero, date, data: dayObj[id] });
-              }
-            }
-          }
-          // sort by date then startMinutes
-          flat.sort((a,b)=>{
-            if(a.date < b.date) return -1; if(a.date > b.date) return 1;
-            return Number(a.data.startMinutes) - Number(b.data.startMinutes);
-          });
+    for (let barbero in data) {
+      for (let fecha in data[barbero]) {
+        for (let id in data[barbero][fecha]) {
+          const c = data[barbero][fecha][id];
+
+          html += `
+            <div class="item">
+              <div>
+                <strong>${c.nombre}</strong><br>
+                <span class="tag">${barbero}</span>
+                <span class="tag">${fecha}</span>
+                <span class="tag">${c.startMinutes} min</span>
+              </div>
+              <button class="danger" onclick="del('${barbero}','${fecha}','${id}')">Eliminar</button>
+            </div>
+          `;
         }
-        snapshotData = flat;
-        renderList(flat);
-      }, (err)=>{ console.error(err); listContainer.innerHTML = '<div class="small">Error cargando citas.</div>'; });
-
-      // store unsubscribe function
-      listeners.push(()=> unsub());
+      }
     }
 
-    // filter input
-    filterInput.addEventListener('input', ()=>{
-      const q = (filterInput.value||'').trim().toLowerCase();
-      if(!q){ renderList(snapshotData); return; }
-      const filtered = snapshotData.filter(item=>{
-        const d = item.data;
-        return (d.nombre||'').toLowerCase().includes(q) || (item.barbero||'').toLowerCase().includes(q) || (d.servicio||'').toLowerCase().includes(q) || (d.telefono||'').toLowerCase().includes(q);
-      });
-      renderList(filtered);
-    });
+    document.getElementById("list").innerHTML = html;
+  });
+}
 
-    // auth flow
-    btnAcceder.addEventListener('click', ()=>{
-      const v = (adminKey.value||'').trim();
-      if(v === ACCESS_KEY){
-        authBox.style.display='none'; panel.style.display='block'; attachRealtime();
-      } else { authMsg.textContent='Clave incorrecta.'; authMsg.style.color='#f87171'; }
-    });
+/* ------------------------------
+   ❌ ELIMINAR CITA
+------------------------------ */
+window.del = function (barbero, fecha, id) {
+  if (!confirm("¿Eliminar cita?")) return;
 
-    btnRefresh.addEventListener('click', ()=>{ attachRealtime(); alert('Forzando actualización...'); });
+  const path = `appointments/${barbero}/${fecha}/${id}`;
+  remove(ref(db, path));
+};
 
-    btnLogout.addEventListener('click', ()=>{
-      listeners.forEach(u=>u()); listeners=[]; snapshotData=[]; listContainer.innerHTML=''; panel.style.display='none'; authBox.style.display='block'; adminKey.value=''; authMsg.textContent='Cerraste sesión.';
-    });
+/* ------------------------------
+   🔎 BUSCADOR
+------------------------------ */
+document.getElementById("search").addEventListener("input", (e) => {
+  let q = e.target.value.toLowerCase();
+  document.querySelectorAll(".item").forEach((i) => {
+    i.style.display = i.innerText.toLowerCase().includes(q) ? "grid" : "none";
+  });
+});
+</script>
 
-    adminKey.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') btnAcceder.click(); });
-  </script>
 </body>
 </html>
