@@ -4,7 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Panel Admin — LA ZONA DEL BARBERO</title>
-
   <style>
     /* ========================
        VARIABLES & BASE
@@ -15,8 +14,7 @@
       --glass:rgba(255,255,255,0.03); --danger:#ef6b6b; --good:#35d19b;
       --radius:14px; --stat-bg:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
     }
-    /* auto light theme variables (will toggle class .light on body) */
-    .light { --bg: #f6f7f9; --bg-2:#ffffff; --card:#ffffff; --line:#e6e9ee; --text:#081019; --muted:#6b7280; --glass: rgba(0,0,0,0.04); }
+    .light { --bg:#f6f7f9; --bg-2:#ffffff; --card:#ffffff; --line:#e6e9ee; --text:#081019; --muted:#6b7280; --glass: rgba(0,0,0,0.04); }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
@@ -248,7 +246,7 @@
       <div class="card">
         <h4>Ayuda rápida</h4>
         <div class="small" style="margin-top:8px">Eliminar quita la cita de la Realtime DB. El panel usa la ruta:</div>
-        <div class="kbd" style="margin-top:8px">appointments/{barbero}/{YYYY-MM-DD}/{startMinutes}</div>
+        <div class="kbd" style="margin-top:8px">appointments/{barbero}/{YYYY-MM-DD}/{id}</div>
       </div>
     </aside>
   </div>
@@ -257,9 +255,7 @@
   <div id="sheetBackdrop" class="sheet-backdrop">
     <div class="sheet" role="dialog" aria-modal="true">
       <div class="drag"></div>
-      <div id="sheetContent">
-        <!-- populated by JS -->
-      </div>
+      <div id="sheetContent"></div>
       <div style="height:10px"></div>
       <div style="display:flex;gap:8px;justify-content:flex-end">
         <button id="sheetClose" class="btn">Cerrar</button>
