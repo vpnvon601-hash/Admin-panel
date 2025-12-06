@@ -1,274 +1,474 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Panel Admin — LA ZONA DEL BARBERO</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>LA ZONA DEL BARBERO — Panel Admin</title>
+    <style>
+        /* Estilos base (copiados para consistencia) */
+        :root{
+            --bg:#06070a; --card:#0e1115; --muted:#9aa0a6; --line:#1e252b;
+            --text:#e6eef3; --accent:#f6c358; --accent-2:#7be3a8; --glass:rgba(255,255,255,0.03);
+            --danger:#ef6b6b; --good:#35d19b;
+            --radius:14px;
+        }
+        *{box-sizing:border-box}
+        body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;background:linear-gradient(180deg,#030304 0%,#071018 100%);color:var(--text);-webkit-font-smoothing:antialiased; padding:20px;}
+        .container{max-width:900px;margin:auto;}
+        .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);padding:18px;border-radius:var(--radius);border:1px solid var(--line);box-shadow:0 6px 30px rgba(0,0,0,0.6); margin-bottom: 20px;}
+        h2{color:var(--accent); text-align:center;}
+        h3{margin:0 0 12px 0;font-weight:700}
+        label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px; margin-top: 10px;}
+        input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);font-size:15px}
+        button.primary{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#071018;border:none;padding:12px 14px;border-radius:10px;cursor:pointer;font-weight:800;box-shadow:0 8px 20px rgba(123,227,168,0.06); width: 100%; margin-top: 20px;}
+        button.secondary{background:transparent;color:var(--text);border:1px solid var(--line);padding:12px 14px;border-radius:10px;cursor:pointer;font-weight:700; width: 100%; margin-top: 10px;}
+        .row{display:flex;gap:10px;}
+        .message{padding:10px;border-radius:10px;margin-top:10px;font-size:14px; display:none;}
+        .success{background:rgba(53, 209, 155, 0.1); color:var(--good); border:1px solid var(--good);}
+        .error{background:rgba(239, 107, 107, 0.1); color:var(--danger); border:1px solid var(--danger);}
+        .loader{display:inline-block;width:14px;height:14px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--accent);animation:spin .9s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        
+        /* Estilos de lista de citas */
+        .appointment-table-container{overflow-x:auto;}
+        .appointment-table{width:100%; border-collapse: collapse; margin-top:15px;}
+        .appointment-table th, .appointment-table td{padding:10px 12px; text-align: left; border-bottom:1px solid var(--line); font-size:14px;}
+        .appointment-table th{background:rgba(255,255,255,0.03); font-weight:700; color:var(--accent-2);}
+        .appointment-table tr:hover{background:rgba(255,255,255,0.01);}
+        .appointment-table .phone-link{white-space:nowrap; color:var(--accent); text-decoration:none; font-weight: 600;}
+        .appointment-table .date-created{font-size:10px; color:var(--muted); white-space:nowrap;}
+        
+        /* Ausencias */
+        .list-container{border:1px solid var(--line); border-radius:var(--radius); padding:10px; max-height: 250px; overflow-y: auto; margin-top:10px;}
+        .period-item{padding:8px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;}
+        .period-item:last-child{border-bottom:none;}
+        .delete-btn{background:var(--danger); color:white; border:none; border-radius:5px; padding:4px 8px; cursor:pointer; font-size:12px;}
 
-<style>
-  :root {
-    --bg: #0a0a0c;
-    --card: rgba(255,255,255,0.05);
-    --border: rgba(255,255,255,0.10);
-    --text: #ffffff;
-    --muted: #9aa0a6;
-    --danger: #ff4d4d;
-    --accent: #f6c358;
-  }
-
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Inter", Arial;
-    background: var(--bg);
-    color: var(--text);
-    margin: 0;
-    padding: 22px;
-  }
-
-  h2 {
-    font-weight: 600;
-    margin-bottom: 12px;
-  }
-
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    padding: 18px;
-    border-radius: 14px;
-    backdrop-filter: blur(12px);
-    margin-bottom: 14px;
-  }
-
-  /* ESTILO PARA LABELS (NUEVO) */
-  label {
-    display: block;
-    color: var(--muted);
-    font-size: 14px;
-    margin-top: 14px;
-    margin-bottom: -6px;
-  }
-
-  input {
-    width: 100%;
-    padding: 12px;
-    border-radius: 12px;
-    border: 1px solid var(--border);
-    background: rgba(255,255,255,0.04);
-    color: var(--text);
-    font-size: 16px;
-    margin-top: 8px;
-  }
-
-  .btn {
-    width: 100%;
-    margin-top: 12px;
-    padding: 12px;
-    background: var(--accent);
-    border: none;
-    border-radius: 12px;
-    color: #0a0a0c;
-    font-weight: 700;
-    cursor: pointer;
-    font-size: 16px;
-  }
-
-  .btn:active {
-    transform: scale(0.98);
-    transition: 0.15s;
-  }
-  
-  .btn-secondary {
-    background: rgba(255,255,255,0.08) !important;
-    color: var(--text);
-    border: 1px solid rgba(255,255,255,0.16);
-  }
-
-  .btn-delete {
-    margin-top: 10px;
-    background: var(--danger);
-    border: none;
-    padding: 8px 12px;
-    border-radius: 10px;
-    cursor: pointer;
-    color: white;
-  }
-</style>
+        /* Header */
+        header{display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding:10px 0; border-bottom: 1px solid var(--line);}
+        header h3{margin:0; color:var(--accent-2);}
+        .user-info{font-size:14px; color:var(--muted);}
+        .logout-btn{padding:8px 12px; font-size:14px; cursor:pointer;}
+    </style>
 </head>
 <body>
+    <div class="container">
+        <h2>💈 Panel de Administración — LA ZONA DEL BARBERO</h2>
 
-<div id="loginBox" class="card">
-  <h2>Acceso de Barbero</h2>
-  <p style="color: var(--muted); margin-top: -6px;">Ingresa tu usuario y contraseña.</p>
+        <div id="loginContainer" class="card" style="max-width:400px; margin: 40px auto;">
+            <h3>🔑 Iniciar Sesión</h3>
+            <div id="loginMessage" class="message"></div>
+            
+            <label for="username">Usuario</label>
+            <input id="username" type="text" placeholder="Tu usuario">
 
-  <label for="usuario">Usuario</label>
-  <input type="text" id="usuario" placeholder="Tu nombre de Barbero">
-  
-  <label for="password">Contraseña</label>
-  <input type="password" id="password" placeholder="Contraseña de acceso">
-  
-  <button class="btn" id="btnLogin">Entrar</button>
+            <label for="password">Contraseña</label>
+            <input id="password" type="password" placeholder="Tu contraseña">
 
-  <p id="msg" style="color:#ff7777; font-size:14px; margin-top:6px;"></p>
-</div>
+            <button class="primary" id="btnLogin">Acceder al Panel</button>
+            <p style="text-align:center; font-size:12px; color:var(--muted); margin-top:15px;">**Usuarios de Prueba:**<br>Dilan: dilan_admin / DilanPassword123</p>
+        </div>
 
-<div id="panel" style="display:none;">
-  <h2 id="panelTitle">Citas Agendadas</h2>
-  <button id="btnLogout" class="btn btn-secondary" style="width:auto; margin-top:0; margin-bottom:14px;">Cerrar Sesión</button>
-  <div id="lista"></div>
-</div>
+        <div id="dashboardContainer" style="display:none;">
+            <header>
+                <div class="user-info">Sesión iniciada como: <strong id="barberNameDisplay"></strong></div>
+                <button id="btnLogout" class="secondary logout-btn">Cerrar Sesión</button>
+            </header>
+            
+            <div class="card">
+                <h3 style="display:flex; justify-content:space-between; align-items:center;">
+                    📅 Tus Citas Agendadas
+                    <span id="appointmentCount" style="font-size:14px; color:var(--accent);"></span>
+                </h3>
+                
+                <div id="appointmentList" class="appointment-table-container">
+                    <p style="text-align:center; color:var(--muted);">Cargando citas...</p>
+                </div>
+            </div>
 
-<script type="module">
+            <div class="card">
+                <h3>⛔ Marcar Ausencia Personal</h3>
+                <div id="absenceMessage" class="message"></div>
 
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+                <div class="row">
+                    <div style="flex:1;">
+                        <label for="startDate">Fecha de Inicio *</label>
+                        <input id="startDate" type="date">
+                    </div>
+                    <div style="flex:1;">
+                        <label for="endDate">Fecha de Fin *</label>
+                        <input id="endDate" type="date">
+                    </div>
+                </div>
 
-  // --- TU FIREBASE ---
-  const firebaseConfig = {
-    apiKey: "AIzaSyAN8piM_UR3kLDUnJFYe5diazItfvYIlSA",
-    authDomain: "lazonadelbarbero-b4e75.firebaseapp.com",
-    databaseURL: "https://lazonadelbarbero-b4e75-default-rtdb.firebaseio.com",
-    projectId: "lazonadelbarbero-b4e75",
-    storageBucket: "lazonadelbarbero-b4e75.firebasestorage.app",
-    messagingSenderId: "251180096928",
-    appId: "1:251180096928:web:86d0ab83c7e444af79d8c5",
-    measurementId: "G-G4YL7M4Z00"
-  };
+                <label for="reason">Razón de la Ausencia</label>
+                <input id="reason" type="text" placeholder="Ej: Vacaciones, día libre, etc. (Opcional)">
 
-  const app = initializeApp(firebaseConfig);
-  const db  = getDatabase(app);
+                <button class="primary" id="btnSaveAbsence">Guardar Periodo de Ausencia</button>
+            </div>
 
-  const loginBox = document.getElementById("loginBox");
-  const panel    = document.getElementById("panel");
-  const lista    = document.getElementById("lista");
-  const panelTitle = document.getElementById("panelTitle");
-  const btnLogout = document.getElementById("btnLogout");
+            <div class="card">
+                <h3>📅 Ausencias Programadas (Tus Ausencias)</h3>
+                <div id="absenceListContainer" class="list-container">
+                    <p style="text-align:center; color:var(--muted);">Cargando ausencias...</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-  // ************************************
-  // ** CREDENCIALES DE BARBEROS (NUEVO) **
-  // ************************************
-  const BARBER_CREDENTIALS = {
-    // Usuario: Contraseña (¡Modifica estas contraseñas!)
-    "Dylan": "dylan123",
-    "Santiago": "santi456",
-    "Alejandro": "ale789",
-    "Leonardo": "leo000"
-  };
-  
-  let loggedInBarbero = null; // Almacena el nombre del barbero loggeado
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        // Importamos 'set' para guardar, 'get' para leer, y 'remove' para eliminar
+        import { getDatabase, ref, set, get, child, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-  // Convertir minutos a hora iPhone AM/PM
-  function minutesToTime(min) {
-    const h = Math.floor(min / 60);
-    const m = min % 60;
-    const ampm = h >= 12 ? "PM" : "AM";
-    const hour12 = h % 12 === 0 ? 12 : h % 12;
-    return `${hour12}:${String(m).padStart(2, "0")} ${ampm}`;
-  }
+        // Firebase config (DEBE SER LA MISMA que en el index (2).html)
+        const firebaseConfig = {
+          apiKey: "AIzaSyAN8piM_UR3kLDUnJFYe5diazItfvYIlSA",
+          authDomain: "lazonadelbarbero-b4e75.firebaseapp.com",
+          databaseURL: "https://lazonadelbarbero-b4e75-default-rtdb.firebaseio.com",
+          projectId: "lazonadelbarbero-b4e75",
+          storageBucket: "lazonadelbarbero-b4e75.firebasestorage.app",
+          messagingSenderId: "251180096928",
+          appId: "1:251180096928:web:86d0ab83c7e444af79d8c5",
+          measurementId: "G-G4YL7M4Z00"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
 
-  // ************************************
-  // ** LÓGICA DE LOGIN (MODIFICADA) **
-  // ************************************
-  document.getElementById("btnLogin").addEventListener("click", () => {
-    const usuario = document.getElementById("usuario").value.trim();
-    const password = document.getElementById("password").value.trim();
-    const msgEl = document.getElementById("msg");
+        // ** Hardcoded Credentials ** (CAMBIAR INMEDIATAMENTE EN PRODUCCIÓN)
+        const BARBER_CREDENTIALS = {
+            "dilan_admin": { password: "DilanPassword123", name: "Dilan" },
+            "alejo_admin": { password: "AlejoPassword123", name: "Alejandro" },
+            "leo_admin": { password: "LeoPassword123", name: "Leonardo" },
+            "santi_admin": { password: "SantiPassword123", name: "Santiago" }
+        };
+        
+        let LOGGED_IN_BARBER = localStorage.getItem('loggedBarber') || null;
 
-    if (BARBER_CREDENTIALS[usuario] === password) {
-      loggedInBarbero = usuario;
-      loginBox.style.display = "none";
-      panel.style.display = "block";
-      panelTitle.textContent = `Citas de ${loggedInBarbero}`;
-      cargarCitas();
-    } else {
-      msgEl.innerHTML = "Usuario o Contraseña incorrectos";
-    }
-  });
+        // DOM Elements
+        const loginContainer = document.getElementById('loginContainer');
+        const dashboardContainer = document.getElementById('dashboardContainer');
+        const barberNameDisplay = document.getElementById('barberNameDisplay');
+        const appointmentList = document.getElementById('appointmentList');
+        const appointmentCount = document.getElementById('appointmentCount');
 
-  // ************************************
-  // ** LÓGICA DE LOGOUT (NUEVA) **
-  // ************************************
-  btnLogout.addEventListener("click", () => {
-    loggedInBarbero = null;
-    document.getElementById("usuario").value = "";
-    document.getElementById("password").value = "";
-    document.getElementById("msg").innerHTML = "";
-    panel.style.display = "none";
-    loginBox.style.display = "block";
-    
-    // Aquí se debería detener el listener de Firebase,
-    // pero para este ejemplo simple, solo se oculta la vista.
-  });
+        // Login DOM
+        const usernameEl = document.getElementById('username');
+        const passwordEl = document.getElementById('password');
+        const btnLogin = document.getElementById('btnLogin');
+        const loginMessageEl = document.getElementById('loginMessage');
+        const btnLogout = document.getElementById('btnLogout');
 
+        // Absence DOM
+        const startDateEl = document.getElementById('startDate');
+        const endDateEl = document.getElementById('endDate');
+        const reasonEl = document.getElementById('reason');
+        const btnSaveAbsence = document.getElementById('btnSaveAbsence');
+        const absenceMessageEl = document.getElementById('absenceMessage');
+        const absenceListContainer = document.getElementById('absenceListContainer');
 
-  // ************************************
-  // ** CARGAR CITAS (MODIFICADA PARA FILTRAR) **
-  // ************************************
-  function cargarCitas() {
-    if (!loggedInBarbero) return; 
-
-    // Referencia solo a las citas del barbero loggeado
-    const refCitas = ref(db, `appointments/${loggedInBarbero}`);
-    lista.innerHTML = "<p style='color:var(--muted);'>Cargando citas...</p>";
-
-    onValue(refCitas, snap => {
-      lista.innerHTML = "";
-      const data = snap.val(); 
-
-      if (!data) {
-        lista.innerHTML = `<p style='color:var(--muted);'>No tienes citas agendadas, ${loggedInBarbero}.</p>`;
-        return;
-      }
-
-      const allAppointments = [];
-
-      // La estructura ahora es {fecha: {id: cita, ...}, ...}
-      for (const fecha in data) {
-        for (const id in data[fecha]) {
-          const c = data[fecha][id];
-          c.fecha = fecha; // Añadir fecha y ID para la referencia de borrado
-          c.id = id;
-          allAppointments.push(c);
+        // --- UTILS ---
+        function minutesToAmPmWithSpace(m){
+            let hh = Math.floor(m/60); const mm = String(m%60).padStart(2,'0');
+            const ampm = hh >= 12 ? 'PM' : 'AM'; hh = hh % 12; if(hh===0) hh=12;
+            return `${hh}:${mm} ${ampm}`;
         }
-      }
+        function formatFirebaseDate(timestamp) {
+            if (!timestamp) return 'N/A';
+            const date = new Date(timestamp);
+            return date.toLocaleString('es-CO', { 
+                day: 'numeric', 
+                month: 'short', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }).replace('.', '');
+        }
 
-      // Ordenar por fecha y luego por hora de inicio
-      allAppointments.sort((a, b) => {
-        const dateA = new Date(a.fecha).getTime() + a.startMinutes * 60000;
-        const dateB = new Date(b.fecha).getTime() + b.startMinutes * 60000;
-        return dateA - dateB;
-      });
+        // --- MESSAGE HANDLERS ---
+        function showMessage(element, type, text) {
+            element.classList.remove('success', 'error');
+            element.classList.add(type);
+            element.textContent = text;
+            element.style.display = 'block';
+            setTimeout(() => { element.style.display = 'none'; }, 5000);
+        }
 
-      // Renderizar citas
-      for (const c of allAppointments) {
-        const div = document.createElement("div");
-        div.className = "card";
+        // --- AUTHENTICATION LOGIC ---
+        function checkLoginState() {
+            if (LOGGED_IN_BARBER) {
+                barberNameDisplay.textContent = LOGGED_IN_BARBER;
+                loginContainer.style.display = 'none';
+                dashboardContainer.style.display = 'block';
+                loadDashboardData(LOGGED_IN_BARBER);
+            } else {
+                loginContainer.style.display = 'block';
+                dashboardContainer.style.display = 'none';
+                usernameEl.value = '';
+                passwordEl.value = '';
+                usernameEl.focus();
+            }
+        }
 
-        div.innerHTML = `
-          <strong style="font-size:18px;">${c.nombre}</strong><br>
-          <span style="color:var(--muted);">Servicio:</span> ${c.servicio}<br>
-          <span style="color:var(--muted);">Fecha:</span> ${c.fecha}<br>
-          <span style="color:var(--muted);">Hora:</span> ${minutesToTime(c.startMinutes)}<br>
-          <span style="color:var(--muted);">Duración:</span> ${c.durationMinutes} min<br>
-          <span style="color:var(--muted);">Tel:</span> ${c.telefono}<br>
-          <span style="color:var(--muted);">Precio:</span> $${c.priceCOP ? c.priceCOP.toLocaleString('es-CO') : 'N/A'}<br>
-          <span style="color:var(--muted);">Creado:</span> ${new Date(c.createdAt).toLocaleDateString('es-CO', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})}<br>
+        btnLogin.addEventListener('click', () => {
+            const username = usernameEl.value.trim();
+            const password = passwordEl.value.trim();
+            
+            const user = BARBER_CREDENTIALS[username];
 
-          <button class="btn-delete">Eliminar</button>
-        `;
-
-        // Botón eliminar
-        div.querySelector(".btn-delete").addEventListener("click", async () => {
-          if (confirm("¿Eliminar esta cita?")) {
-            // La ruta ahora usa el barbero loggeado (implícito), la fecha y el ID
-            await remove(ref(db, `appointments/${loggedInBarbero}/${c.fecha}/${c.id}`));
-          }
+            if(user && user.password === password) {
+                LOGGED_IN_BARBER = user.name;
+                localStorage.setItem('loggedBarber', LOGGED_IN_BARBER);
+                showMessage(loginMessageEl, 'success', `Bienvenido, ${LOGGED_IN_BARBER}.`);
+                checkLoginState();
+            } else {
+                showMessage(loginMessageEl, 'error', 'Usuario o contraseña incorrectos.');
+            }
         });
 
-        lista.appendChild(div);
-      }
-    });
-  }
+        btnLogout.addEventListener('click', () => {
+            LOGGED_IN_BARBER = null;
+            localStorage.removeItem('loggedBarber');
+            showMessage(loginMessageEl, 'success', 'Sesión cerrada. Vuelve pronto.');
+            checkLoginState();
+        });
+        
+        // --- DASHBOARD DATA LOADING ---
 
-</script>
+        async function loadDashboardData(barbero) {
+            await displayAppointments(barbero);
+            await displayAbsences(barbero);
+        }
 
+        // --- APPOINTMENT LIST LOGIC ---
+
+        async function fetchBarberAppointments(barbero) {
+            const appointmentsRef = ref(db, `appointments/${barbero}`);
+            const snap = await get(appointmentsRef);
+            const allAppointments = [];
+
+            if (snap.exists()) {
+                const datesData = snap.val();
+                for (const dateISO in datesData) {
+                    const appointmentsOnDate = datesData[dateISO];
+                    for (const key in appointmentsOnDate) {
+                        const appt = appointmentsOnDate[key];
+                        appt.dateISO = dateISO;
+                        appt.id = key;
+                        allAppointments.push(appt);
+                    }
+                }
+            }
+            // Sort by date (oldest first) and then by start time
+            allAppointments.sort((a, b) => {
+                if (a.dateISO > b.dateISO) return 1;
+                if (a.dateISO < b.dateISO) return -1;
+                return a.startMinutes - b.startMinutes;
+            });
+
+            return allAppointments;
+        }
+
+        async function displayAppointments(barbero) {
+            appointmentList.innerHTML = '<p style="text-align:center;"><span class="loader"></span> Cargando citas...</p>';
+            try {
+                const appointments = await fetchBarberAppointments(barbero);
+                appointmentCount.textContent = `(${appointments.length} Citas)`;
+
+                if (appointments.length === 0) {
+                    appointmentList.innerHTML = `<p style="text-align:center; color:var(--muted);">No hay citas agendadas para ti, ${barbero}.</p>`;
+                    return;
+                }
+
+                let tableHTML = `
+                    <table class="appointment-table">
+                        <thead>
+                            <tr>
+                                <th>Cliente</th>
+                                <th>Teléfono</th>
+                                <th>Servicio</th>
+                                <th>Fecha y Hora</th>
+                                <th>Creada</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                appointments.forEach(appt => {
+                    const horaNice = minutesToAmPmWithSpace(appt.startMinutes);
+                    const isPassed = appt.dateISO < new Date().toISOString().split('T')[0] || (appt.dateISO === new Date().toISOString().split('T')[0] && appt.endMinutes < (new Date().getHours() * 60 + new Date().getMinutes()));
+                    const rowStyle = isPassed ? 'style="opacity: 0.5; text-decoration: line-through;"' : '';
+                    
+                    // Separar nombre y apellido si se guardó como 'nombre apellido'
+                    const fullName = appt.nombre || 'N/A';
+                    const nameParts = fullName.split(' ');
+                    const firstName = nameParts[0];
+                    const lastName = nameParts.slice(1).join(' ');
+
+                    tableHTML += `
+                        <tr ${rowStyle}>
+                            <td>${firstName} <br><strong>${lastName}</strong></td>
+                            <td>
+                                <a href="https://wa.me/${appt.telefono}" target="_blank" class="phone-link">
+                                    ${appt.telefono} 📲
+                                </a>
+                            </td>
+                            <td>${appt.servicio} (${appt.durationMinutes}m)</td>
+                            <td>
+                                ${appt.dateISO} 
+                                <br>
+                                <strong>${horaNice}</strong>
+                            </td>
+                            <td><span class="date-created">${formatFirebaseDate(appt.createdAt)}</span></td>
+                        </tr>
+                    `;
+                });
+
+                tableHTML += `</tbody></table>`;
+                appointmentList.innerHTML = tableHTML;
+                
+            } catch(error) {
+                console.error("Error fetching appointments:", error);
+                appointmentList.innerHTML = '<p style="text-align:center; color:var(--danger);">Error cargando citas.</p>';
+            }
+        }
+
+
+        // --- ABSENCE LOGIC (Adapted for Logged-in Barber) ---
+
+        // Function to fetch absences
+        async function fetchUnavailableDates(barbero){
+            const path = `unavailableDates/${barbero}`;
+            const snap = await get(child(ref(db), path));
+            if(snap.exists()){
+                return snap.val();
+            }
+            return {};
+        }
+
+        // Function to display absences
+        async function displayAbsences(barbero) {
+            absenceListContainer.innerHTML = '<p style="text-align:center;"><span class="loader"></span> Cargando...</p>';
+            try {
+                const data = await fetchUnavailableDates(barbero);
+                
+                if(!data || Object.keys(data).length === 0) {
+                    absenceListContainer.innerHTML = `<p style="text-align:center; color:var(--muted);">No hay ausencias programadas para ti.</p>`;
+                    return;
+                }
+
+                let html = '';
+                // Ordenar por fecha de inicio (la clave)
+                const sortedKeys = Object.keys(data).sort(); 
+
+                sortedKeys.forEach(startDate => {
+                    const period = data[startDate];
+                    const endDate = period.endDate;
+                    const reason = period.reason;
+                    const today = new Date().toISOString().split('T')[0];
+                    
+                    const isPast = endDate < today;
+                    const style = isPast ? 'opacity: 0.6; text-decoration: line-through;' : '';
+                    
+                    html += `
+                        <div class="period-item" style="${style}">
+                            <div>
+                                <strong>${startDate}</strong> al <strong>${endDate}</strong> 
+                                <span style="color:var(--accent); margin-left: 8px;">(${reason})</span>
+                                ${isPast ? '<span style="color:var(--danger); font-size:11px;">(Pasado)</span>' : ''}
+                            </div>
+                            <button class="delete-btn" data-barbero="${barbero}" data-startdate="${startDate}">Eliminar</button>
+                        </div>
+                    `;
+                });
+                
+                absenceListContainer.innerHTML = html;
+                
+                // Agregar listeners para el botón de eliminar
+                absenceListContainer.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', handleDeleteAbsence);
+                });
+
+            } catch(error) {
+                console.error("Error displaying absences:", error);
+                absenceListContainer.innerHTML = '<p style="text-align:center; color:var(--danger);">Error cargando ausencias.</p>';
+            }
+        }
+
+        // Function to handle saving absence
+        btnSaveAbsence.addEventListener('click', async () => {
+            const barbero = LOGGED_IN_BARBER; // Usa el barbero logueado
+            const startDate = startDateEl.value;
+            const endDate = endDateEl.value;
+            const reason = reasonEl.value.trim();
+            
+            if(!barbero || !startDate || !endDate){
+                showMessage(absenceMessageEl, 'error', 'Por favor, selecciona la fecha de inicio y fecha de fin.');
+                return;
+            }
+
+            if(startDate > endDate){
+                showMessage(absenceMessageEl, 'error', 'La fecha de inicio no puede ser posterior a la fecha de fin.');
+                return;
+            }
+            
+            btnSaveAbsence.disabled = true;
+            btnSaveAbsence.innerHTML = 'Guardando... <span class="loader"></span>';
+
+            try {
+                const path = `unavailableDates/${barbero}/${startDate}`;
+                const data = {
+                    endDate: endDate,
+                    reason: reason || 'Ausencia programada'
+                };
+
+                await set(ref(db, path), data);
+                
+                showMessage(absenceMessageEl, 'success', `Ausencia guardada correctamente del ${startDate} al ${endDate}.`);
+                
+                // Limpiar formulario y refrescar lista
+                startDateEl.value = '';
+                endDateEl.value = '';
+                reasonEl.value = '';
+                await displayAbsences(barbero);
+                
+            } catch(error) {
+                console.error("Error saving absence:", error);
+                showMessage(absenceMessageEl, 'error', 'Error al guardar la ausencia. Revisa la consola.');
+            } finally {
+                btnSaveAbsence.disabled = false;
+                btnSaveAbsence.textContent = 'Guardar Periodo de Ausencia';
+            }
+        });
+
+        // Function to handle deleting absence
+        async function handleDeleteAbsence(event) {
+            if(!confirm('¿Estás seguro de que quieres eliminar este periodo de ausencia?')) return;
+            
+            const button = event.target;
+            const barbero = button.dataset.barbero;
+            const startDate = button.dataset.startdate;
+            
+            button.disabled = true;
+            button.textContent = '...';
+
+            try {
+                const path = `unavailableDates/${barbero}/${startDate}`;
+                await remove(ref(db, path));
+                showMessage(absenceMessageEl, 'success', `Ausencia del ${startDate} eliminada correctamente.`);
+                await displayAbsences(barbero); // Refrescar la lista
+            } catch(error) {
+                console.error("Error deleting absence:", error);
+                showMessage(absenceMessageEl, 'error', 'Error al eliminar la ausencia.');
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Eliminar';
+            }
+        }
+
+        // Inicialización
+        checkLoginState();
+
+    </script>
 </body>
 </html>
