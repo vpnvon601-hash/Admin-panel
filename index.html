@@ -23,7 +23,7 @@
         button.primary{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#071018;border:none;padding:12px 14px;border-radius:10px;cursor:pointer;font-weight:800;box-shadow:0 8px 20px rgba(123,227,168,0.06); width: 100%; margin-top: 20px;}
         button.secondary{background:transparent;color:var(--text);border:1px solid var(--line);padding:12px 14px;border-radius:10px;cursor:pointer;font-weight:700; width: 100%; margin-top: 10px;}
         .row{display:flex;gap:10px;}
-        .message{padding:10px;border-radius:10px;margin-top:10px;font-size:14px; display:none;}
+        .message{padding:10px;border-radius:10px;margin-top:10px;font-size:14px; display:none; margin-bottom: 10px;} /* margin-bottom agregado */
         .success{background:rgba(53, 209, 155, 0.1); color:var(--good); border:1px solid var(--good);}
         .error{background:rgba(239, 107, 107, 0.1); color:var(--danger); border:1px solid var(--danger);}
         .loader{display:inline-block;width:14px;height:14px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--accent);animation:spin .9s linear infinite}
@@ -53,12 +53,24 @@
         header h3{margin:0; color:var(--accent-2);}
         .user-info{font-size:14px; color:var(--muted);}
         .logout-btn{padding:8px 12px; font-size:14px; cursor:pointer;}
+
+        /* ADDED: Logo Image Container */
+        .logo-container{
+            width:40px;height:40px;border-radius:50%;
+            background:linear-gradient(135deg,var(--accent),var(--accent-2));
+            display:inline-grid;place-items:center;
+            box-shadow: 0 0 10px rgba(246, 195, 88, 0.2);
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>💈 Panel de Administración — LA ZONA DEL BARBERO</h2>
-
+        <div style="display:flex;align-items:center;gap:12px;justify-content:center;font-weight:800;font-size:20px; margin-bottom: 20px;">
+            <div class="logo-container">
+                 <img src="1000070893.png" alt="Logo La Zona del Barbero" style="width:100%;height:100%;object-fit:cover;border-radius:50%">
+            </div>
+            <h2 style="margin:0;">Panel de Administración — LA ZONA DEL BARBERO</h2>
+        </div>
         <div id="loginContainer" class="card" style="max-width:400px; margin: 40px auto;">
             <h3>🔑 Iniciar Sesión</h3>
             <div id="loginMessage" class="message"></div>
@@ -70,7 +82,7 @@
             <input id="password" type="password" placeholder="Tu contraseña">
 
             <button class="primary" id="btnLogin">Acceder al Panel</button>
-            <p style="text-align:center; font-size:12px; color:var(--muted); margin-top:15px;">**Usuarios de Prueba:**<br>Dilan: dilan_admin / DilanPassword123</p>
+            <p style="text-align:center; font-size:12px; color:var(--muted); margin-top:15px;">**Usuarios de Prueba:**<br>Dilan: dilan_admin / Dilan123</p>
         </div>
 
         <div id="dashboardContainer" style="display:none;">
@@ -79,6 +91,8 @@
                 <button id="btnLogout" class="secondary logout-btn">Cerrar Sesión</button>
             </header>
             
+            <div id="notificationBanner" class="message success" style="display: none; font-weight: 700;"></div>
+
             <div class="card">
                 <h3 style="display:flex; justify-content:space-between; align-items:center;">
                     📅 Tus Citas Agendadas
@@ -130,8 +144,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        // Importamos 'set' para guardar, 'get' para leer, y 'remove' para eliminar
-        import { getDatabase, ref, set, get, child, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        // Importamos 'set' para guardar, 'get' para leer, 'remove' para eliminar y 'onValue' para escuchar cambios
+        import { getDatabase, ref, set, get, child, remove, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         // Firebase config (DEBE SER LA MISMA que en el index (2).html)
         const firebaseConfig = {
@@ -147,7 +161,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // ** Hardcoded Credentials ** (CAMBIAR INMEDIATAMENTE EN PRODUCCIÓN)
+        // ** Hardcoded Credentials **
         const BARBER_CREDENTIALS = {
             "dilan_admin": { password: "Dilan123", name: "Dilan" },
             "alejo_admin": { password: "Alejo123", name: "Alejandro" },
@@ -156,6 +170,12 @@
         };
         
         let LOGGED_IN_BARBER = localStorage.getItem('loggedBarber') || null;
+
+        // NEW: Almacenamiento global para el estado y Notificación
+        let allAppointmentsCache = [];
+        let currentAppointmentCount = 0;
+        // Sonido de notificación solo para la alerta in-app (si está visible)
+        const notificationSound = new Audio('https://s3-us-west-2.amazonaws.com/s.cdpn.io/12028/notification.mp3'); 
 
         // DOM Elements
         const loginContainer = document.getElementById('loginContainer');
@@ -179,9 +199,12 @@
         const absenceMessageEl = document.getElementById('absenceMessage');
         const absenceListContainer = document.getElementById('absenceListContainer');
         
-        // NEW: Filter DOM
+        // Filter DOM
         const filterDateEl = document.getElementById('filterDate');
         const clearDateFilterBtn = document.getElementById('clearDateFilter');
+        
+        // NEW: Notification DOM
+        const notificationBanner = document.getElementById('notificationBanner');
 
 
         // --- UTILS ---
@@ -201,6 +224,33 @@
                 minute: '2-digit'
             }).replace('.', '');
         }
+        
+        // Helper para procesar la data de Firebase en un array ordenado
+        function processSnapshot(snapshot) {
+            const allAppointments = [];
+            if (snapshot.exists()) {
+                const datesData = snapshot.val();
+                for (const dateISO in datesData) {
+                    const appointmentsOnDate = datesData[dateISO];
+                    for (const key in appointmentsOnDate) {
+                        const appt = appointmentsOnDate[key];
+                        appt.dateISO = dateISO;
+                        appt.id = key; 
+                        appt.startMinutes = Number(appt.startMinutes);
+                        appt.endMinutes = Number(appt.endMinutes || (appt.startMinutes + appt.durationMinutes));
+                        allAppointments.push(appt);
+                    }
+                }
+            }
+            // Sort by date (oldest first) and then by start time
+            allAppointments.sort((a, b) => {
+                if (a.dateISO > b.dateISO) return 1;
+                if (a.dateISO < b.dateISO) return -1;
+                return a.startMinutes - b.startMinutes;
+            });
+            return allAppointments;
+        }
+
 
         // --- MESSAGE HANDLERS ---
         function showMessage(element, type, text) {
@@ -210,6 +260,22 @@
             element.style.display = 'block';
             setTimeout(() => { element.style.display = 'none'; }, 5000);
         }
+        
+        // --- NEW: Solicitar permiso de notificación ---
+        function requestNotificationPermission() {
+            if (!("Notification" in window)) {
+                console.log("Este navegador no soporta notificaciones de escritorio.");
+            } else if (Notification.permission !== 'granted') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        console.log("Permiso de notificación concedido.");
+                    } else {
+                        console.log("Permiso de notificación denegado.");
+                    }
+                });
+            }
+        }
+
 
         // --- AUTHENTICATION LOGIC ---
         function checkLoginState() {
@@ -218,17 +284,20 @@
                 loginContainer.style.display = 'none';
                 dashboardContainer.style.display = 'block';
                 loadDashboardData(LOGGED_IN_BARBER);
-                // Attach event listeners for filtering here
-                filterDateEl.addEventListener('change', () => displayAppointments(LOGGED_IN_BARBER));
+
+                // Configurar listeners de filtro para que trabajen con la caché
+                filterDateEl.addEventListener('change', () => refreshAppointmentDisplay(LOGGED_IN_BARBER));
                 clearDateFilterBtn.addEventListener('click', () => {
                     filterDateEl.value = '';
-                    displayAppointments(LOGGED_IN_BARBER);
+                    refreshAppointmentDisplay(LOGGED_IN_BARBER);
                 });
             } else {
                 loginContainer.style.display = 'block';
                 dashboardContainer.style.display = 'none';
                 usernameEl.value = '';
                 passwordEl.value = '';
+                filterDateEl.value = ''; // Limpiar filtro al cerrar sesión
+                appointmentList.innerHTML = '';
                 usernameEl.focus();
             }
         }
@@ -243,6 +312,7 @@
                 LOGGED_IN_BARBER = user.name;
                 localStorage.setItem('loggedBarber', LOGGED_IN_BARBER);
                 showMessage(loginMessageEl, 'success', `Bienvenido, ${LOGGED_IN_BARBER}.`);
+                requestNotificationPermission(); // <--- NEW: Pide permiso de notificación
                 checkLoginState();
             } else {
                 showMessage(loginMessageEl, 'error', 'Usuario o contraseña incorrectos.');
@@ -259,296 +329,66 @@
         // --- DASHBOARD DATA LOADING ---
 
         async function loadDashboardData(barbero) {
-            await displayAppointments(barbero);
             await displayAbsences(barbero);
+            setupAppointmentListener(barbero); // Inicializa el listener en tiempo real
         }
 
-        // --- APPOINTMENT LIST LOGIC ---
+        // --- NEW: APPOINTMENT LISTENER LOGIC ---
 
-        async function fetchBarberAppointments(barbero) {
+        function setupAppointmentListener(barbero) {
             const appointmentsRef = ref(db, `appointments/${barbero}`);
-            const snap = await get(appointmentsRef);
-            const allAppointments = [];
-
-            if (snap.exists()) {
-                const datesData = snap.val();
-                for (const dateISO in datesData) {
-                    const appointmentsOnDate = datesData[dateISO];
-                    for (const key in appointmentsOnDate) {
-                        const appt = appointmentsOnDate[key];
-                        appt.dateISO = dateISO;
-                        appt.id = key; // El ID es la hora de inicio en minutos
-                        allAppointments.push(appt);
-                    }
+            
+            // onValue escucha cambios en tiempo real
+            onValue(appointmentsRef, (snapshot) => {
+                const newAppointmentsData = processSnapshot(snapshot);
+                
+                // 1. Check for new appointments 
+                if (currentAppointmentCount > 0 && newAppointmentsData.length > currentAppointmentCount) {
+                    triggerNewAppointmentNotification();
                 }
-            }
-            // Sort by date (oldest first) and then by start time
-            allAppointments.sort((a, b) => {
-                if (a.dateISO > b.dateISO) return 1;
-                if (a.dateISO < b.dateISO) return -1;
-                return a.startMinutes - b.startMinutes;
+                
+                // 2. Update global state
+                allAppointmentsCache = newAppointmentsData;
+                currentAppointmentCount = newAppointmentsData.length;
+
+                // 3. Refresh display with the new data (and apply current filter)
+                refreshAppointmentDisplay(barbero);
             });
-
-            return allAppointments;
         }
-
-        async function displayAppointments(barbero) {
-            appointmentList.innerHTML = '<p style="text-align:center;"><span class="loader"></span> Cargando citas...</p>';
-            const filterDate = filterDateEl.value; // Obtener el valor del filtro
+        
+        function triggerNewAppointmentNotification() {
+            // Encontrar la última cita añadida 
+            const latest = allAppointmentsCache.reduce((latest, current) => {
+                return (latest === null || current.createdAt > latest.createdAt) ? current : latest;
+            }, null);
             
-            try {
-                const allAppointments = await fetchBarberAppointments(barbero);
-                
-                // Aplicar Filtro de Fecha
-                let appointments = allAppointments;
-                if (filterDate) {
-                    appointments = allAppointments.filter(appt => appt.dateISO === filterDate);
-                }
+            const clientName = latest ? latest.nombre : 'Cliente Desconocido';
+            const clientTime = latest ? minutesToAmPmWithSpace(latest.startMinutes) : 'N/A';
 
-                appointmentCount.textContent = `(${appointments.length} Citas)`;
-
-                if (appointments.length === 0) {
-                    appointmentList.innerHTML = `<p style="text-align:center; color:var(--muted);">No hay citas agendadas ${filterDate ? 'para la fecha seleccionada' : ''} para ti, ${barbero}.</p>`;
-                    return;
-                }
-
-                let tableHTML = `
-                    <table class="appointment-table">
-                        <thead>
-                            <tr>
-                                <th>Cliente</th>
-                                <th>Teléfono</th>
-                                <th>Servicio</th>
-                                <th>Fecha y Hora</th>
-                                <th>Creada</th>
-                                <th>Acciones</th> 
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-                
-                appointments.forEach(appt => {
-                    const horaNice = minutesToAmPmWithSpace(appt.startMinutes);
-                    const isPassed = appt.dateISO < new Date().toISOString().split('T')[0] || (appt.dateISO === new Date().toISOString().split('T')[0] && appt.endMinutes < (new Date().getHours() * 60 + new Date().getMinutes()));
-                    const rowStyle = isPassed ? 'style="opacity: 0.5; text-decoration: line-through;"' : '';
-                    
-                    const fullName = appt.nombre || 'N/A';
-                    const nameParts = fullName.split(' ');
-                    const firstName = nameParts[0];
-                    const lastName = nameParts.slice(1).join(' ');
-
-                    tableHTML += `
-                        <tr ${rowStyle}>
-                            <td>${firstName} <br><strong>${lastName}</strong></td>
-                            <td>
-                                <a href="https://wa.me/${appt.telefono}" target="_blank" class="phone-link">
-                                    ${appt.telefono} 📲
-                                </a>
-                            </td>
-                            <td>${appt.servicio} (${appt.durationMinutes}m)</td>
-                            <td>
-                                ${appt.dateISO} 
-                                <br>
-                                <strong>${horaNice}</strong>
-                            </td>
-                            <td><span class="date-created">${formatFirebaseDate(appt.createdAt)}</span></td>
-                            <td class="action-col">
-                                <button class="action-btn delete-btn" 
-                                    data-barbero="${barbero}" 
-                                    data-date="${appt.dateISO}" 
-                                    data-appt-id="${appt.id}" 
-                                    title="Eliminar la cita">
-                                    🗑️ Eliminar
-                                </button>
-                                <a href="https://wa.me/${appt.telefono}" target="_blank" class="action-btn edit-btn" title="Contactar al cliente para editar/reagendar">
-                                    ✏️ Editar
-                                </a>
-                            </td>
-                        </tr>
-                    `;
+            
+            // --- 1. WEB PUSH NOTIFICATION (OS-style) ---
+            if (Notification.permission === 'granted') {
+                new Notification('🚨 ¡NUEVA CITA AGENDADA!', {
+                    body: `Cliente: ${clientName} - Hora: ${clientTime} - Barbero: ${LOGGED_IN_BARBER}`,
+                    icon: '1000070893.png', // Usamos el logo que subiste
+                    vibrate: [200, 100, 200]
                 });
-
-                tableHTML += `</tbody></table>`;
-                appointmentList.innerHTML = tableHTML;
-                
-                // Añadir listeners al botón de eliminar
-                appointmentList.querySelectorAll('.delete-btn').forEach(button => {
-                    button.addEventListener('click', handleDeleteAppointment);
-                });
-                
-            } catch(error) {
-                console.error("Error fetching appointments:", error);
-                appointmentList.innerHTML = '<p style="text-align:center; color:var(--danger);">Error cargando citas.</p>';
             }
+            
+            // --- 2. IN-APP BANNER (Sonido y alerta dentro de la página) ---
+            if(document.visibilityState === 'visible') {
+                notificationSound.play().catch(e => console.log('Error playing sound:', e));
+            }
+
+            notificationBanner.textContent = `🔔 ¡NUEVA CITA AGENDADA! Cliente: ${clientName} - Hora: ${clientTime}`;
+            notificationBanner.classList.add('success');
+            notificationBanner.style.display = 'block';
+            
+            // Ocultar después de 7 segundos
+            setTimeout(() => {
+                notificationBanner.style.display = 'none';
+            }, 7000);
         }
 
-        // --- NEW: DELETE APPOINTMENT LOGIC ---
-        async function handleDeleteAppointment(event) {
-            if(!confirm('¿Estás seguro de que quieres ELIMINAR esta cita? Esta acción es irreversible.')) return;
-            
-            const button = event.target;
-            const barbero = button.dataset.barbero;
-            const dateISO = button.dataset.date;
-            const appointmentId = button.dataset.apptId; // La hora en minutos
-
-            if(!barbero || !dateISO || !appointmentId) {
-                alert('Error interno: Faltan datos de la cita.');
-                return;
-            }
-            
-            button.disabled = true;
-            button.textContent = '...';
-
-            try {
-                // Path: appointments/{barbero}/{dateISO}/{appointmentId}
-                const path = `appointments/${barbero}/${dateISO}/${appointmentId}`;
-                await remove(ref(db, path));
-                
-                showMessage(loginMessageEl, 'success', `Cita del ${dateISO} eliminada correctamente.`);
-                await displayAppointments(barbero); // Refrescar la lista
-            } catch(error) {
-                console.error("Error deleting appointment:", error);
-                showMessage(loginMessageEl, 'error', 'Error al eliminar la cita. Revisa la consola.');
-            }
-        }
-
-
-        // --- ABSENCE LOGIC (Adapted for Logged-in Barber) ---
-        // (Mantenida de la versión anterior)
-
-        // Function to fetch absences
-        async function fetchUnavailableDates(barbero){
-            const path = `unavailableDates/${barbero}`;
-            const snap = await get(child(ref(db), path));
-            if(snap.exists()){
-                return snap.val();
-            }
-            return {};
-        }
-
-        // Function to display absences
-        async function displayAbsences(barbero) {
-            absenceListContainer.innerHTML = '<p style="text-align:center;"><span class="loader"></span> Cargando...</p>';
-            try {
-                const data = await fetchUnavailableDates(barbero);
-                
-                if(!data || Object.keys(data).length === 0) {
-                    absenceListContainer.innerHTML = `<p style="text-align:center; color:var(--muted);">No hay ausencias programadas para ti.</p>`;
-                    return;
-                }
-
-                let html = '';
-                // Ordenar por fecha de inicio (la clave)
-                const sortedKeys = Object.keys(data).sort(); 
-
-                sortedKeys.forEach(startDate => {
-                    const period = data[startDate];
-                    const endDate = period.endDate;
-                    const reason = period.reason;
-                    const today = new Date().toISOString().split('T')[0];
-                    
-                    const isPast = endDate < today;
-                    const style = isPast ? 'opacity: 0.6; text-decoration: line-through;' : '';
-                    
-                    html += `
-                        <div class="period-item" style="${style}">
-                            <div>
-                                <strong>${startDate}</strong> al <strong>${endDate}</strong> 
-                                <span style="color:var(--accent); margin-left: 8px;">(${reason})</span>
-                                ${isPast ? '<span style="color:var(--danger); font-size:11px;">(Pasado)</span>' : ''}
-                            </div>
-                            <button class="delete-btn absence" data-barbero="${barbero}" data-startdate="${startDate}">Eliminar</button>
-                        </div>
-                    `;
-                });
-                
-                absenceListContainer.innerHTML = html;
-                
-                // Agregar listeners para el botón de eliminar
-                absenceListContainer.querySelectorAll('.delete-btn.absence').forEach(button => {
-                    button.addEventListener('click', handleDeleteAbsence);
-                });
-
-            } catch(error) {
-                console.error("Error displaying absences:", error);
-                absenceListContainer.innerHTML = '<p style="text-align:center; color:var(--danger);">Error cargando ausencias.</p>';
-            }
-        }
-
-        // Function to handle saving absence
-        btnSaveAbsence.addEventListener('click', async () => {
-            const barbero = LOGGED_IN_BARBER; // Usa el barbero logueado
-            const startDate = startDateEl.value;
-            const endDate = endDateEl.value;
-            const reason = reasonEl.value.trim();
-            
-            if(!barbero || !startDate || !endDate){
-                showMessage(absenceMessageEl, 'error', 'Por favor, selecciona la fecha de inicio y fecha de fin.');
-                return;
-            }
-
-            if(startDate > endDate){
-                showMessage(absenceMessageEl, 'error', 'La fecha de inicio no puede ser posterior a la fecha de fin.');
-                return;
-            }
-            
-            btnSaveAbsence.disabled = true;
-            btnSaveAbsence.innerHTML = 'Guardando... <span class="loader"></span>';
-
-            try {
-                const path = `unavailableDates/${barbero}/${startDate}`;
-                const data = {
-                    endDate: endDate,
-                    reason: reason || 'Ausencia programada'
-                };
-
-                await set(ref(db, path), data);
-                
-                showMessage(absenceMessageEl, 'success', `Ausencia guardada correctamente del ${startDate} al ${endDate}.`);
-                
-                // Limpiar formulario y refrescar lista
-                startDateEl.value = '';
-                endDateEl.value = '';
-                reasonEl.value = '';
-                await displayAbsences(barbero);
-                
-            } catch(error) {
-                console.error("Error saving absence:", error);
-                showMessage(absenceMessageEl, 'error', 'Error al guardar la ausencia. Revisa la consola.');
-            } finally {
-                btnSaveAbsence.disabled = false;
-                btnSaveAbsence.textContent = 'Guardar Periodo de Ausencia';
-            }
-        });
-
-        // Function to handle deleting absence
-        async function handleDeleteAbsence(event) {
-            if(!confirm('¿Estás seguro de que quieres eliminar este periodo de ausencia?')) return;
-            
-            const button = event.target;
-            const barbero = button.dataset.barbero;
-            const startDate = button.dataset.startdate;
-            
-            button.disabled = true;
-            button.textContent = '...';
-
-            try {
-                const path = `unavailableDates/${barbero}/${startDate}`;
-                await remove(ref(db, path));
-                showMessage(absenceMessageEl, 'success', `Ausencia del ${startDate} eliminada correctamente.`);
-                await displayAbsences(barbero); // Refrescar la lista
-            } catch(error) {
-                console.error("Error deleting absence:", error);
-                showMessage(absenceMessageEl, 'error', 'Error al eliminar la ausencia.');
-            } finally {
-                button.disabled = false;
-                button.textContent = 'Eliminar';
-            }
-        }
-
-        // Inicialización
-        checkLoginState();
-
-    </script>
-</body>
-</html>
+        // --- APPOINTMENT LIST DISPLAY (Modified to use cache) ---
+        function refreshAppointmentDisplay(b
