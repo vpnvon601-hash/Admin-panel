@@ -37,12 +37,16 @@
         .appointment-table tr:hover{background:rgba(255,255,255,0.01);}
         .appointment-table .phone-link{white-space:nowrap; color:var(--accent); text-decoration:none; font-weight: 600;}
         .appointment-table .date-created{font-size:10px; color:var(--muted); white-space:nowrap;}
+        .appointment-table td.action-col { width: 1%; white-space: nowrap; }
+        .action-btn{ padding:6px 10px; font-size:12px; margin:2px; display:inline-block; border-radius:6px; cursor:pointer;}
+        .delete-btn{ background:var(--danger); color:white; border:none; }
+        .edit-btn{ background:var(--muted); color:#071018; border:none; }
         
         /* Ausencias */
         .list-container{border:1px solid var(--line); border-radius:var(--radius); padding:10px; max-height: 250px; overflow-y: auto; margin-top:10px;}
         .period-item{padding:8px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;}
         .period-item:last-child{border-bottom:none;}
-        .delete-btn{background:var(--danger); color:white; border:none; border-radius:5px; padding:4px 8px; cursor:pointer; font-size:12px;}
+        .delete-btn.absence{background:var(--danger); color:white; border:none; border-radius:5px; padding:4px 8px; cursor:pointer; font-size:12px;}
 
         /* Header */
         header{display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding:10px 0; border-bottom: 1px solid var(--line);}
@@ -80,6 +84,14 @@
                     📅 Tus Citas Agendadas
                     <span id="appointmentCount" style="font-size:14px; color:var(--accent);"></span>
                 </h3>
+
+                <div style="display:flex; gap:10px; align-items:flex-end;">
+                    <div style="flex:1;">
+                        <label for="filterDate">Buscar/Filtrar por Fecha:</label>
+                        <input id="filterDate" type="date">
+                    </div>
+                    <button id="clearDateFilter" class="secondary" style="width:auto; padding:12px 14px; margin:0;">Mostrar Todo</button>
+                </div>
                 
                 <div id="appointmentList" class="appointment-table-container">
                     <p style="text-align:center; color:var(--muted);">Cargando citas...</p>
@@ -137,10 +149,10 @@
 
         // ** Hardcoded Credentials ** (CAMBIAR INMEDIATAMENTE EN PRODUCCIÓN)
         const BARBER_CREDENTIALS = {
-            "dilan_admin": { password: "DilanPassword123", name: "Dilan" },
-            "alejo_admin": { password: "AlejoPassword123", name: "Alejandro" },
-            "leo_admin": { password: "LeoPassword123", name: "Leonardo" },
-            "santi_admin": { password: "SantiPassword123", name: "Santiago" }
+            "dilan_admin": { password: "Dilan123", name: "Dilan" },
+            "alejo_admin": { password: "Alejo123", name: "Alejandro" },
+            "leo_admin": { password: "Leo123", name: "Leonardo" },
+            "santi_admin": { password: "Santi1011", name: "Santiago" }
         };
         
         let LOGGED_IN_BARBER = localStorage.getItem('loggedBarber') || null;
@@ -166,6 +178,11 @@
         const btnSaveAbsence = document.getElementById('btnSaveAbsence');
         const absenceMessageEl = document.getElementById('absenceMessage');
         const absenceListContainer = document.getElementById('absenceListContainer');
+        
+        // NEW: Filter DOM
+        const filterDateEl = document.getElementById('filterDate');
+        const clearDateFilterBtn = document.getElementById('clearDateFilter');
+
 
         // --- UTILS ---
         function minutesToAmPmWithSpace(m){
@@ -201,6 +218,12 @@
                 loginContainer.style.display = 'none';
                 dashboardContainer.style.display = 'block';
                 loadDashboardData(LOGGED_IN_BARBER);
+                // Attach event listeners for filtering here
+                filterDateEl.addEventListener('change', () => displayAppointments(LOGGED_IN_BARBER));
+                clearDateFilterBtn.addEventListener('click', () => {
+                    filterDateEl.value = '';
+                    displayAppointments(LOGGED_IN_BARBER);
+                });
             } else {
                 loginContainer.style.display = 'block';
                 dashboardContainer.style.display = 'none';
@@ -254,7 +277,7 @@
                     for (const key in appointmentsOnDate) {
                         const appt = appointmentsOnDate[key];
                         appt.dateISO = dateISO;
-                        appt.id = key;
+                        appt.id = key; // El ID es la hora de inicio en minutos
                         allAppointments.push(appt);
                     }
                 }
@@ -271,12 +294,21 @@
 
         async function displayAppointments(barbero) {
             appointmentList.innerHTML = '<p style="text-align:center;"><span class="loader"></span> Cargando citas...</p>';
+            const filterDate = filterDateEl.value; // Obtener el valor del filtro
+            
             try {
-                const appointments = await fetchBarberAppointments(barbero);
+                const allAppointments = await fetchBarberAppointments(barbero);
+                
+                // Aplicar Filtro de Fecha
+                let appointments = allAppointments;
+                if (filterDate) {
+                    appointments = allAppointments.filter(appt => appt.dateISO === filterDate);
+                }
+
                 appointmentCount.textContent = `(${appointments.length} Citas)`;
 
                 if (appointments.length === 0) {
-                    appointmentList.innerHTML = `<p style="text-align:center; color:var(--muted);">No hay citas agendadas para ti, ${barbero}.</p>`;
+                    appointmentList.innerHTML = `<p style="text-align:center; color:var(--muted);">No hay citas agendadas ${filterDate ? 'para la fecha seleccionada' : ''} para ti, ${barbero}.</p>`;
                     return;
                 }
 
@@ -289,6 +321,7 @@
                                 <th>Servicio</th>
                                 <th>Fecha y Hora</th>
                                 <th>Creada</th>
+                                <th>Acciones</th> 
                             </tr>
                         </thead>
                         <tbody>
@@ -299,7 +332,6 @@
                     const isPassed = appt.dateISO < new Date().toISOString().split('T')[0] || (appt.dateISO === new Date().toISOString().split('T')[0] && appt.endMinutes < (new Date().getHours() * 60 + new Date().getMinutes()));
                     const rowStyle = isPassed ? 'style="opacity: 0.5; text-decoration: line-through;"' : '';
                     
-                    // Separar nombre y apellido si se guardó como 'nombre apellido'
                     const fullName = appt.nombre || 'N/A';
                     const nameParts = fullName.split(' ');
                     const firstName = nameParts[0];
@@ -320,6 +352,18 @@
                                 <strong>${horaNice}</strong>
                             </td>
                             <td><span class="date-created">${formatFirebaseDate(appt.createdAt)}</span></td>
+                            <td class="action-col">
+                                <button class="action-btn delete-btn" 
+                                    data-barbero="${barbero}" 
+                                    data-date="${appt.dateISO}" 
+                                    data-appt-id="${appt.id}" 
+                                    title="Eliminar la cita">
+                                    🗑️ Eliminar
+                                </button>
+                                <a href="https://wa.me/${appt.telefono}" target="_blank" class="action-btn edit-btn" title="Contactar al cliente para editar/reagendar">
+                                    ✏️ Editar
+                                </a>
+                            </td>
                         </tr>
                     `;
                 });
@@ -327,14 +371,50 @@
                 tableHTML += `</tbody></table>`;
                 appointmentList.innerHTML = tableHTML;
                 
+                // Añadir listeners al botón de eliminar
+                appointmentList.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', handleDeleteAppointment);
+                });
+                
             } catch(error) {
                 console.error("Error fetching appointments:", error);
                 appointmentList.innerHTML = '<p style="text-align:center; color:var(--danger);">Error cargando citas.</p>';
             }
         }
 
+        // --- NEW: DELETE APPOINTMENT LOGIC ---
+        async function handleDeleteAppointment(event) {
+            if(!confirm('¿Estás seguro de que quieres ELIMINAR esta cita? Esta acción es irreversible.')) return;
+            
+            const button = event.target;
+            const barbero = button.dataset.barbero;
+            const dateISO = button.dataset.date;
+            const appointmentId = button.dataset.apptId; // La hora en minutos
+
+            if(!barbero || !dateISO || !appointmentId) {
+                alert('Error interno: Faltan datos de la cita.');
+                return;
+            }
+            
+            button.disabled = true;
+            button.textContent = '...';
+
+            try {
+                // Path: appointments/{barbero}/{dateISO}/{appointmentId}
+                const path = `appointments/${barbero}/${dateISO}/${appointmentId}`;
+                await remove(ref(db, path));
+                
+                showMessage(loginMessageEl, 'success', `Cita del ${dateISO} eliminada correctamente.`);
+                await displayAppointments(barbero); // Refrescar la lista
+            } catch(error) {
+                console.error("Error deleting appointment:", error);
+                showMessage(loginMessageEl, 'error', 'Error al eliminar la cita. Revisa la consola.');
+            }
+        }
+
 
         // --- ABSENCE LOGIC (Adapted for Logged-in Barber) ---
+        // (Mantenida de la versión anterior)
 
         // Function to fetch absences
         async function fetchUnavailableDates(barbero){
@@ -377,7 +457,7 @@
                                 <span style="color:var(--accent); margin-left: 8px;">(${reason})</span>
                                 ${isPast ? '<span style="color:var(--danger); font-size:11px;">(Pasado)</span>' : ''}
                             </div>
-                            <button class="delete-btn" data-barbero="${barbero}" data-startdate="${startDate}">Eliminar</button>
+                            <button class="delete-btn absence" data-barbero="${barbero}" data-startdate="${startDate}">Eliminar</button>
                         </div>
                     `;
                 });
@@ -385,7 +465,7 @@
                 absenceListContainer.innerHTML = html;
                 
                 // Agregar listeners para el botón de eliminar
-                absenceListContainer.querySelectorAll('.delete-btn').forEach(button => {
+                absenceListContainer.querySelectorAll('.delete-btn.absence').forEach(button => {
                     button.addEventListener('click', handleDeleteAbsence);
                 });
 
