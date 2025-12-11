@@ -41,6 +41,10 @@
         .action-btn{ padding:6px 10px; font-size:12px; margin:2px; display:inline-block; border-radius:6px; cursor:pointer;}
         .delete-btn{ background:var(--danger); color:white; border:none; }
         .edit-btn{ background:var(--muted); color:#071018; border:none; }
+        /* Nuevo estilo para completadas */
+        .complete-btn{ background:var(--good); color:#071018; border:none; }
+        .completed-row { opacity: 0.5; background-color: rgba(53, 209, 155, 0.05); }
+        .completed-text { text-decoration: line-through; }
         
         /* Ausencias */
         .list-container{border:1px solid var(--line); border-radius:var(--radius); padding:10px; max-height: 250px; overflow-y: auto; margin-top:10px;}
@@ -100,7 +104,7 @@
             </div>
 
             <div class="card">
-                <h3>⛔ Marcar Ausencia Personal</h3>
+                <h3>⛔ Marcar Ausencia por Días Completos</h3>
                 <div id="absenceMessage" class="message"></div>
 
                 <div class="row">
@@ -117,11 +121,34 @@
                 <label for="reason">Razón de la Ausencia</label>
                 <input id="reason" type="text" placeholder="Ej: Vacaciones, día libre, etc. (Opcional)">
 
-                <button class="primary" id="btnSaveAbsence">Guardar Periodo de Ausencia</button>
+                <button class="primary" id="btnSaveAbsence">Guardar Periodo de Ausencia por Días</button>
             </div>
-
+            
             <div class="card">
-                <h3>📅 Ausencias Programadas (Tus Ausencias)</h3>
+                <h3>⏰ Marcar Ausencia Temporal (Por Horas)</h3>
+                <div id="hourlyAbsenceMessage" class="message"></div>
+
+                <label for="hourlyDate">Fecha de Ausencia *</label>
+                <input id="hourlyDate" type="date">
+
+                <div class="row">
+                    <div style="flex:1;">
+                        <label for="startTime">Hora de Inicio *</label>
+                        <input id="startTime" type="time">
+                    </div>
+                    <div style="flex:1;">
+                        <label for="endTime">Hora de Fin *</label>
+                        <input id="endTime" type="time">
+                    </div>
+                </div>
+
+                <label for="hourlyReason">Razón de la Ausencia</label>
+                <input id="hourlyReason" type="text" placeholder="Ej: Cita médica, almuerzo extendido, etc. (Opcional)">
+
+                <button class="primary" id="btnSaveHourlyAbsence">Guardar Ausencia Temporal</button>
+            </div>
+            <div class="card">
+                <h3>📅 Ausencias Programadas (Días y Horas)</h3>
                 <div id="absenceListContainer" class="list-container">
                     <p style="text-align:center; color:var(--muted);">Cargando ausencias...</p>
                 </div>
@@ -178,13 +205,21 @@
         const loginMessageEl = document.getElementById('loginMessage');
         const btnLogout = document.getElementById('btnLogout');
 
-        // Absence DOM
+        // Absence DOM (Días Completos)
         const startDateEl = document.getElementById('startDate');
         const endDateEl = document.getElementById('endDate');
         const reasonEl = document.getElementById('reason');
         const btnSaveAbsence = document.getElementById('btnSaveAbsence');
         const absenceMessageEl = document.getElementById('absenceMessage');
         const absenceListContainer = document.getElementById('absenceListContainer');
+        
+        // NEW: Absence DOM (Por Horas)
+        const hourlyDateEl = document.getElementById('hourlyDate');
+        const startTimeEl = document.getElementById('startTime');
+        const endTimeEl = document.getElementById('endTime');
+        const hourlyReasonEl = document.getElementById('hourlyReason');
+        const btnSaveHourlyAbsence = document.getElementById('btnSaveHourlyAbsence');
+        const hourlyAbsenceMessageEl = document.getElementById('hourlyAbsenceMessage');
         
         // Filter DOM
         const filterDateEl = document.getElementById('filterDate');
@@ -211,6 +246,11 @@
                 minute: '2-digit'
             }).replace('.', '');
         }
+        // NEW: Convierte "HH:MM" a minutos desde la medianoche
+        function timeToMinutes(timeStr) {
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return hours * 60 + minutes;
+        }
         
         // Helper para procesar la data de Firebase en un array ordenado
         function processSnapshot(snapshot) {
@@ -225,6 +265,8 @@
                         appt.id = key; 
                         appt.startMinutes = Number(appt.startMinutes);
                         appt.endMinutes = Number(appt.endMinutes || (appt.startMinutes + appt.durationMinutes));
+                        // NEW: Asegurar el estado de 'completed'
+                        appt.completed = appt.completed || false; 
                         allAppointments.push(appt);
                     }
                 }
@@ -331,7 +373,13 @@
                 
                 // 1. Check for new appointments 
                 if (currentAppointmentCount > 0 && newAppointmentsData.length > currentAppointmentCount) {
-                    triggerNewAppointmentNotification();
+                    // Solo notificar si el aumento no es por el estado "completed"
+                    const currentActive = allAppointmentsCache.filter(a => !a.completed).length;
+                    const newActive = newAppointmentsData.filter(a => !a.completed).length;
+                    
+                    if (newActive > currentActive) {
+                       triggerNewAppointmentNotification(newAppointmentsData);
+                    }
                 }
                 
                 // 2. Update global state
@@ -343,15 +391,16 @@
             });
         }
         
-        function triggerNewAppointmentNotification() {
-            // Encontrar la última cita añadida 
-            const latest = allAppointmentsCache.reduce((latest, current) => {
-                return (latest === null || current.createdAt > latest.createdAt) ? current : latest;
-            }, null);
+        function triggerNewAppointmentNotification(newAppointmentsData) {
+            // Encontrar la última cita añadida comparando con la caché antigua
+            const oldIds = new Set(allAppointmentsCache.map(a => `${a.dateISO}-${a.id}`));
+            const latest = newAppointmentsData.find(appt => !oldIds.has(`${appt.dateISO}-${appt.id}`));
             
             const clientName = latest ? latest.nombre : 'Cliente Desconocido';
             const clientTime = latest ? minutesToAmPmWithSpace(latest.startMinutes) : 'N/A';
-
+            
+            // Si no se encuentra una "nueva" cita, no notificar (puede ser un cambio de estado)
+            if (!latest) return;
             
             // --- 1. WEB PUSH NOTIFICATION (OS-style) ---
             if (Notification.permission === 'granted') {
@@ -414,30 +463,55 @@
             
             filteredAppointments.forEach(appt => {
                 const horaNice = minutesToAmPmWithSpace(appt.startMinutes);
-                const isPassed = appt.dateISO < new Date().toISOString().split('T')[0] || (appt.dateISO === new Date().toISOString().split('T')[0] && appt.endMinutes < (new Date().getHours() * 60 + new Date().getMinutes()));
-                const rowStyle = isPassed ? 'style="opacity: 0.5; text-decoration: line-through;"' : '';
                 
+                // NEW: Lógica para citas pasadas o completadas
+                const todayISO = new Date().toISOString().split('T')[0];
+                const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+                
+                const isPast = appt.dateISO < todayISO || (appt.dateISO === todayISO && appt.endMinutes < nowMinutes);
+                const isCompleted = appt.completed === true;
+
+                // Aplicar estilos
+                let rowClasses = '';
+                let textClasses = '';
+                if (isCompleted) {
+                    rowClasses = 'completed-row';
+                    textClasses = 'completed-text';
+                } else if (isPast) {
+                    rowClasses = ''; // No sobreescribir completed-row
+                    textClasses = 'completed-text'; // Usar solo tachado para pasado no completado
+                }
+
                 const fullName = appt.nombre || 'N/A';
                 const nameParts = fullName.split(' ');
                 const firstName = nameParts[0];
                 const lastName = nameParts.slice(1).join(' ');
 
                 tableHTML += `
-                    <tr ${rowStyle}>
-                        <td>${firstName} <br><strong>${lastName}</strong></td>
-                        <td>
-                            <a href="https://wa.me/${appt.telefono}" target="_blank" class="phone-link">
+                    <tr class="${rowClasses}">
+                        <td class="${textClasses}">${firstName} <br><strong>${lastName}</strong></td>
+                        <td class="${textClasses}">
+                            <a href="https://wa.me/${appt.telefono}" target="_blank" class="phone-link" style="${isCompleted || isPast ? 'opacity: 0.8;' : ''}">
                                 ${appt.telefono} 📲
                             </a>
                         </td>
-                        <td>${appt.servicio} (${appt.durationMinutes}m)</td>
-                        <td>
+                        <td class="${textClasses}">${appt.servicio} (${appt.durationMinutes}m)</td>
+                        <td class="${textClasses}">
                             ${appt.dateISO} 
                             <br>
                             <strong>${horaNice}</strong>
                         </td>
-                        <td><span class="date-created">${formatFirebaseDate(appt.createdAt)}</span></td>
+                        <td class="${textClasses}"><span class="date-created">${formatFirebaseDate(appt.createdAt)}</span></td>
                         <td class="action-col">
+                            ${!isCompleted ? `
+                                <button class="action-btn complete-btn" 
+                                    data-barbero="${barbero}" 
+                                    data-date="${appt.dateISO}" 
+                                    data-appt-id="${appt.id}" 
+                                    title="Marcar como realizada">
+                                    ✅ Realizada
+                                </button>
+                            ` : ''}
                             <button class="action-btn delete-btn" 
                                 data-barbero="${barbero}" 
                                 data-date="${appt.dateISO}" 
@@ -460,6 +534,12 @@
             appointmentList.querySelectorAll('.delete-btn').forEach(button => {
                 button.removeEventListener('click', handleDeleteAppointment); 
                 button.addEventListener('click', handleDeleteAppointment);
+            });
+            
+            // NEW: Añadir listeners al botón de completar
+            appointmentList.querySelectorAll('.complete-btn').forEach(button => {
+                button.removeEventListener('click', handleCompleteAppointment); 
+                button.addEventListener('click', handleCompleteAppointment);
             });
             
         }
@@ -495,9 +575,40 @@
                 showMessage(loginMessageEl, 'error', 'Error al eliminar la cita. Revisa la consola.');
             }
         }
+        
+        // NEW: COMPLETE APPOINTMENT LOGIC
+        async function handleCompleteAppointment(event) {
+            if(!confirm('¿Marcar esta cita como REALIZADA con éxito?')) return;
+            
+            const button = event.target;
+            const barbero = button.dataset.barbero;
+            const dateISO = button.dataset.date;
+            const appointmentId = button.dataset.apptId; 
+
+            if(!barbero || !dateISO || !appointmentId) {
+                showMessage(loginMessageEl, 'error', 'Error interno: Faltan datos de la cita.');
+                return;
+            }
+            
+            button.disabled = true;
+            button.textContent = '...';
+
+            try {
+                // Path: appointments/{barbero}/{dateISO}/{appointmentId}
+                const path = `appointments/${barbero}/${dateISO}/${appointmentId}/completed`;
+                await set(ref(db, path), true);
+                
+                // La función onValue se encargará de refrescar la lista automáticamente
+                showMessage(loginMessageEl, 'success', `Cita del ${dateISO} marcada como Realizada.`);
+                
+            } catch(error) {
+                console.error("Error completing appointment:", error);
+                showMessage(loginMessageEl, 'error', 'Error al marcar la cita como realizada.');
+            }
+        }
 
 
-        // --- ABSENCE LOGIC ---
+        // --- ABSENCE LOGIC (MODIFICADO PARA INCLUIR HORAS) ---
 
         async function fetchUnavailableDates(barbero){
             const path = `unavailableDates/${barbero}`;
@@ -505,39 +616,105 @@
             if(snap.exists()){
                 return snap.val();
             }
-            return {};
+            // Retornar la estructura base con los dos tipos
+            return {
+                days: {},
+                hours: {}
+            };
         }
 
         async function displayAbsences(barbero) {
             absenceListContainer.innerHTML = '<p style="text-align:center;"><span class="loader"></span> Cargando...</p>';
             try {
-                const data = await fetchUnavailableDates(barbero);
+                // Asumimos que la estructura en Firebase será: unavailableDates/{barbero}/{days|hours}
+                const allData = await fetchUnavailableDates(barbero);
+                const dayAbsences = allData.days || {};
+                const hourAbsences = allData.hours || {};
                 
-                if(!data || Object.keys(data).length === 0) {
+                const allAbsences = [];
+                const today = new Date().toISOString().split('T')[0];
+
+                // 1. Días Completos
+                for (const startDate in dayAbsences) {
+                    const period = dayAbsences[startDate];
+                    allAbsences.push({
+                        type: 'day',
+                        startDate: startDate,
+                        endDate: period.endDate,
+                        reason: period.reason,
+                        isPast: period.endDate < today,
+                        sortKey: startDate // Clave de ordenación
+                    });
+                }
+                
+                // 2. Ausencias por Horas
+                for (const date in hourAbsences) {
+                    const periods = hourAbsences[date];
+                    for (const startMinutes in periods) {
+                        const period = periods[startMinutes];
+                        
+                        // NEW: Formato para mostrar
+                        const startNice = minutesToAmPmWithSpace(Number(startMinutes));
+                        const endNice = minutesToAmPmWithSpace(Number(period.endMinutes));
+                        
+                        allAbsences.push({
+                            type: 'hour',
+                            date: date,
+                            startMinutes: Number(startMinutes),
+                            endMinutes: Number(period.endMinutes),
+                            reason: period.reason,
+                            isPast: date < today || (date === today && period.endMinutes < (new Date().getHours() * 60 + new Date().getMinutes())),
+                            sortKey: `${date}-${String(startMinutes).padStart(4, '0')}` // Clave de ordenación
+                        });
+                    }
+                }
+                
+                // Ordenar: primero por fecha, luego por minutos (para horas)
+                allAbsences.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+
+
+                if(allAbsences.length === 0) {
                     absenceListContainer.innerHTML = `<p style="text-align:center; color:var(--muted);">No hay ausencias programadas para ti.</p>`;
                     return;
                 }
 
                 let html = '';
-                const sortedKeys = Object.keys(data).sort(); 
-
-                sortedKeys.forEach(startDate => {
-                    const period = data[startDate];
-                    const endDate = period.endDate;
-                    const reason = period.reason;
-                    const today = new Date().toISOString().split('T')[0];
+                
+                allAbsences.forEach(abs => {
+                    const style = abs.isPast ? 'opacity: 0.6; text-decoration: line-through;' : '';
+                    let content;
+                    let deleteBtn;
                     
-                    const isPast = endDate < today;
-                    const style = isPast ? 'opacity: 0.6; text-decoration: line-through;' : '';
+                    if (abs.type === 'day') {
+                        content = `
+                            <strong>${abs.startDate}</strong> al <strong>${abs.endDate}</strong> 
+                            <span style="color:var(--accent); margin-left: 8px;">(${abs.reason})</span>
+                            ${abs.isPast ? '<span style="color:var(--danger); font-size:11px;">(Pasado)</span>' : ''}
+                        `;
+                        deleteBtn = `
+                            <button class="delete-btn absence" 
+                                data-barbero="${barbero}" 
+                                data-type="day"
+                                data-startdate="${abs.startDate}">Eliminar</button>
+                        `;
+                    } else { // type === 'hour'
+                        content = `
+                            ⏰ **${abs.date}** de **${minutesToAmPmWithSpace(abs.startMinutes)}** a **${minutesToAmPmWithSpace(abs.endMinutes)}** <span style="color:var(--accent-2); margin-left: 8px;">(${abs.reason})</span>
+                            ${abs.isPast ? '<span style="color:var(--danger); font-size:11px;">(Pasado)</span>' : ''}
+                        `;
+                        deleteBtn = `
+                            <button class="delete-btn absence" 
+                                data-barbero="${barbero}" 
+                                data-type="hour"
+                                data-date="${abs.date}"
+                                data-startminutes="${abs.startMinutes}">Eliminar</button>
+                        `;
+                    }
                     
                     html += `
                         <div class="period-item" style="${style}">
-                            <div>
-                                <strong>${startDate}</strong> al <strong>${endDate}</strong> 
-                                <span style="color:var(--accent); margin-left: 8px;">(${reason})</span>
-                                ${isPast ? '<span style="color:var(--danger); font-size:11px;">(Pasado)</span>' : ''}
-                            </div>
-                            <button class="delete-btn absence" data-barbero="${barbero}" data-startdate="${startDate}">Eliminar</button>
+                            <div>${content}</div>
+                            ${deleteBtn}
                         </div>
                     `;
                 });
@@ -554,7 +731,8 @@
                 absenceListContainer.innerHTML = '<p style="text-align:center; color:var(--danger);">Error cargando ausencias.</p>';
             }
         }
-
+        
+        // Lógica de Días Completos (SIN CAMBIOS Mayores)
         btnSaveAbsence.addEventListener('click', async () => {
             const barbero = LOGGED_IN_BARBER; 
             const startDate = startDateEl.value;
@@ -575,15 +753,16 @@
             btnSaveAbsence.innerHTML = 'Guardando... <span class="loader"></span>';
 
             try {
-                const path = `unavailableDates/${barbero}/${startDate}`;
+                // Nuevo Path: unavailableDates/{barbero}/days/{startDate}
+                const path = `unavailableDates/${barbero}/days/${startDate}`; 
                 const data = {
                     endDate: endDate,
-                    reason: reason || 'Ausencia programada'
+                    reason: reason || 'Ausencia de día completo'
                 };
 
                 await set(ref(db, path), data);
                 
-                showMessage(absenceMessageEl, 'success', `Ausencia guardada correctamente del ${startDate} al ${endDate}.`);
+                showMessage(absenceMessageEl, 'success', `Ausencia de días guardada correctamente del ${startDate} al ${endDate}.`);
                 
                 startDateEl.value = '';
                 endDateEl.value = '';
@@ -591,35 +770,103 @@
                 await displayAbsences(barbero);
                 
             } catch(error) {
-                console.error("Error saving absence:", error);
+                console.error("Error saving day absence:", error);
                 showMessage(absenceMessageEl, 'error', 'Error al guardar la ausencia. Revisa la consola.');
             } finally {
                 btnSaveAbsence.disabled = false;
-                btnSaveAbsence.textContent = 'Guardar Periodo de Ausencia';
+                btnSaveAbsence.textContent = 'Guardar Periodo de Ausencia por Días';
             }
         });
+        
+        // NEW: Lógica de Ausencias por Horas
+        btnSaveHourlyAbsence.addEventListener('click', async () => {
+            const barbero = LOGGED_IN_BARBER; 
+            const date = hourlyDateEl.value;
+            const startTimeStr = startTimeEl.value;
+            const endTimeStr = endTimeEl.value;
+            const reason = hourlyReasonEl.value.trim();
+            
+            if(!barbero || !date || !startTimeStr || !endTimeStr){
+                showMessage(hourlyAbsenceMessageEl, 'error', 'Por favor, selecciona la fecha, hora de inicio y hora de fin.');
+                return;
+            }
+            
+            const startMinutes = timeToMinutes(startTimeStr);
+            const endMinutes = timeToMinutes(endTimeStr);
+
+            if(startMinutes >= endMinutes){
+                showMessage(hourlyAbsenceMessageEl, 'error', 'La hora de inicio debe ser anterior a la hora de fin.');
+                return;
+            }
+            
+            btnSaveHourlyAbsence.disabled = true;
+            btnSaveHourlyAbsence.innerHTML = 'Guardando... <span class="loader"></span>';
+
+            try {
+                // Nuevo Path: unavailableDates/{barbero}/hours/{date}/{startMinutes}
+                const path = `unavailableDates/${barbero}/hours/${date}/${startMinutes}`;
+                const data = {
+                    endMinutes: endMinutes,
+                    reason: reason || 'Ausencia temporal por horas'
+                };
+
+                await set(ref(db, path), data);
+                
+                showMessage(hourlyAbsenceMessageEl, 'success', `Ausencia por horas guardada para el ${date} de ${startTimeStr} a ${endTimeStr}.`);
+                
+                hourlyDateEl.value = '';
+                startTimeEl.value = '';
+                endTimeEl.value = '';
+                hourlyReasonEl.value = '';
+                await displayAbsences(barbero);
+                
+            } catch(error) {
+                console.error("Error saving hourly absence:", error);
+                showMessage(hourlyAbsenceMessageEl, 'error', 'Error al guardar la ausencia por horas. Revisa la consola.');
+            } finally {
+                btnSaveHourlyAbsence.disabled = false;
+                btnSaveHourlyAbsence.textContent = 'Guardar Ausencia Temporal';
+            }
+        });
+
 
         async function handleDeleteAbsence(event) {
             if(!confirm('¿Estás seguro de que quieres eliminar este periodo de ausencia?')) return;
             
             const button = event.target;
             const barbero = button.dataset.barbero;
-            const startDate = button.dataset.startdate;
+            const type = button.dataset.type; // 'day' o 'hour'
             
             button.disabled = true;
             button.textContent = '...';
 
+            let path;
+            if (type === 'day') {
+                const startDate = button.dataset.startdate;
+                path = `unavailableDates/${barbero}/days/${startDate}`;
+            } else if (type === 'hour') {
+                const date = button.dataset.date;
+                const startMinutes = button.dataset.startminutes;
+                path = `unavailableDates/${barbero}/hours/${date}/${startMinutes}`;
+            } else {
+                showMessage(absenceMessageEl, 'error', 'Error interno: Tipo de ausencia desconocido.');
+                button.disabled = false;
+                button.textContent = 'Eliminar';
+                return;
+            }
+
             try {
-                const path = `unavailableDates/${barbero}/${startDate}`;
                 await remove(ref(db, path));
-                showMessage(absenceMessageEl, 'success', `Ausencia del ${startDate} eliminada correctamente.`);
+                showMessage(absenceMessageEl, 'success', `Ausencia eliminada correctamente.`);
                 await displayAbsences(barbero); 
             } catch(error) {
                 console.error("Error deleting absence:", error);
                 showMessage(absenceMessageEl, 'error', 'Error al eliminar la ausencia.');
             } finally {
-                button.disabled = false;
-                button.textContent = 'Eliminar';
+                if(button.textContent === '...') {
+                    button.disabled = false;
+                    button.textContent = 'Eliminar';
+                }
             }
         }
 
