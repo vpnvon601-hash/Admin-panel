@@ -15,849 +15,306 @@
         *{box-sizing:border-box}
         body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;background:linear-gradient(180deg,#030304 0%,#071018 100%);color:var(--text);-webkit-font-smoothing:antialiased; padding:20px;}
         .container{max-width:900px;margin:auto;}
-        .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);padding:18px;border-radius:var(--radius);border:1px solid var(--line);box-shadow:0 6px 30px rgba(0,0,0,0.6); margin-bottom: 20px;}
-        h2{color:var(--accent); text-align:center;}
-        h3{margin:0 0 12px 0;font-weight:700}
-        label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px; margin-top: 10px;}
-        input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);font-size:15px}
-        button.primary{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#071018;border:none;padding:12px 14px;border-radius:10px;cursor:pointer;font-weight:800;box-shadow:0 8px 20px rgba(123,227,168,0.06); width: 100%; margin-top: 20px;}
-        button.secondary{background:transparent;color:var(--text);border:1px solid var(--line);padding:12px 14px;border-radius:10px;cursor:pointer;font-weight:700; width: 100%; margin-top: 10px;}
-        .row{display:flex;gap:10px;}
-        .message{padding:10px;border-radius:10px;margin-top:10px;font-size:14px; display:none; margin-bottom: 10px;} 
-        .success{background:rgba(53, 209, 155, 0.1); color:var(--good); border:1px solid var(--good);}
-        .error{background:rgba(239, 107, 107, 0.1); color:var(--danger); border:1px solid var(--danger);}
-        .loader{display:inline-block;width:14px;height:14px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--accent);animation:spin .9s linear infinite}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        
-        /* Estilos de lista de citas */
-        .appointment-table-container{overflow-x:auto;}
-        .appointment-table{width:100%; border-collapse: collapse; margin-top:15px;}
-        .appointment-table th, .appointment-table td{padding:10px 12px; text-align: left; border-bottom:1px solid var(--line); font-size:14px;}
-        .appointment-table th{background:rgba(255,255,255,0.03); font-weight:700; color:var(--accent-2);}
-        .appointment-table tr:hover{background:rgba(255,255,255,0.01);}
-        .appointment-table .phone-link{white-space:nowrap; color:var(--accent); text-decoration:none; font-weight: 600;}
-        .appointment-table .date-created{font-size:10px; color:var(--muted); white-space:nowrap;}
-        .appointment-table td.action-col { width: 1%; white-space: nowrap; }
-        .action-btn{ padding:6px 10px; font-size:12px; margin:2px; display:inline-block; border-radius:6px; cursor:pointer;}
-        .delete-btn{ background:var(--danger); color:white; border:none; }
-        .edit-btn{ background:var(--muted); color:#071018; border:none; }
-        /* Nuevo estilo para completadas */
-        .complete-btn{ background:var(--good); color:#071018; border:none; }
-        .completed-row { opacity: 0.5; background-color: rgba(53, 209, 155, 0.05); }
-        .completed-text { text-decoration: line-through; }
-        
-        /* Ausencias */
-        .list-container{border:1px solid var(--line); border-radius:var(--radius); padding:10px; max-height: 250px; overflow-y: auto; margin-top:10px;}
-        .period-item{padding:8px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;}
-        .period-item:last-child{border-bottom:none;}
-        .delete-btn.absence{background:var(--danger); color:white; border:none; border-radius:5px; padding:4px 8px; cursor:pointer; font-size:12px;}
+        .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);padding:18px;border-radius:var(--radius);border:1px solid var(--line);margin-bottom:20px;}
+        h1, h2{color:var(--accent); text-align:center; margin-top:0;}
+        .input-group label{display:block;margin-bottom:8px;font-weight:600;}
+        .input-group select, .input-group input[type="date"], .input-group input[type="time"], .input-group textarea{
+            width:100%;padding:10px;border-radius:var(--radius);border:1px solid var(--line);
+            background-color:var(--card);color:var(--text);margin-bottom:15px;
+        }
+        .btn{padding:10px 20px;border:none;border-radius:var(--radius);cursor:pointer;font-weight:600;transition:background-color 0.2s;}
+        .btn-primary{background-color:var(--accent);color:var(--bg);}
+        .btn-danger{background-color:var(--danger);color:var(--text);}
+        .btn-danger:hover{background-color:#d45a5a;}
 
-        /* Header */
-        header{display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding:10px 0; border-bottom: 1px solid var(--line);}
-        header h3{margin:0; color:var(--accent-2);}
-        .user-info{font-size:14px; color:var(--muted);}
-        .logout-btn{padding:8px 12px; font-size:14px; cursor:pointer;}
+        .absences-list{list-style:none;padding:0;}
+        .absences-list li{background-color:var(--card);padding:10px;border-radius:var(--radius);border:1px solid var(--line);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+        .message.success{background-color:var(--good);color:var(--bg);padding:10px;border-radius:var(--radius);margin-bottom:15px;text-align:center;}
+        .message.error{background-color:var(--danger);color:var(--text);padding:10px;border-radius:var(--radius);margin-bottom:15px;text-align:center;}
+        .small{font-size:12px; color: var(--muted); margin-top:-10px; margin-bottom:15px;}
+        
+        /* Estilos para el nuevo grupo de hora de inicio y fin */
+        .time-group { display: flex; gap: 10px; }
+        .time-group > div { flex: 1; }
     </style>
-</head>
-<body>
-    <div class="container">
-        <h2 style="margin-bottom: 20px; margin-top: 10px;">Panel de Administración — LA ZONA DEL BARBERO</h2>
-        <div id="loginContainer" class="card" style="max-width:400px; margin: 40px auto;">
-            <h3>🔑 Iniciar Sesión</h3>
-            <div id="loginMessage" class="message"></div>
-            
-            <label for="username">Usuario</label>
-            <input id="username" type="text" placeholder="Tu usuario">
-
-            <label for="password">Contraseña</label>
-            <input id="password" type="password" placeholder="Tu contraseña">
-
-            <button class="primary" id="btnLogin">Acceder al Panel</button>
-            <p style="text-align:center; font-size:12px; color:var(--muted); margin-top:15px;">**Usuarios de Prueba:**<br>Dilan: dilan_admin / Dilan123</p>
-        </div>
-
-        <div id="dashboardContainer" style="display:none;">
-            <header>
-                <div class="user-info">Sesión iniciada como: <strong id="barberNameDisplay"></strong></div>
-                <button id="btnLogout" class="secondary logout-btn">Cerrar Sesión</button>
-            </header>
-            
-            <div id="notificationBanner" class="message success" style="display: none; font-weight: 700;"></div>
-
-            <div class="card">
-                <h3 style="display:flex; justify-content:space-between; align-items:center;">
-                    📅 Tus Citas Agendadas
-                    <span id="appointmentCount" style="font-size:14px; color:var(--accent);"></span>
-                </h3>
-
-                <div style="display:flex; gap:10px; align-items:flex-end;">
-                    <div style="flex:1;">
-                        <label for="filterDate">Buscar/Filtrar por Fecha:</label>
-                        <input id="filterDate" type="date">
-                    </div>
-                    <button id="clearDateFilter" class="secondary" style="width:auto; padding:12px 14px; margin:0;">Mostrar Todo</button>
-                </div>
-                
-                <div id="appointmentList" class="appointment-table-container">
-                    <p style="text-align:center; color:var(--muted);">Cargando citas...</p>
-                </div>
-            </div>
-
-            <div class="card">
-                <h3>⛔ Marcar Ausencia por Días Completos</h3>
-                <div id="absenceMessage" class="message"></div>
-
-                <div class="row">
-                    <div style="flex:1;">
-                        <label for="startDate">Fecha de Inicio *</label>
-                        <input id="startDate" type="date">
-                    </div>
-                    <div style="flex:1;">
-                        <label for="endDate">Fecha de Fin *</label>
-                        <input id="endDate" type="date">
-                    </div>
-                </div>
-
-                <label for="reason">Razón de la Ausencia</label>
-                <input id="reason" type="text" placeholder="Ej: Vacaciones, día libre, etc. (Opcional)">
-
-                <button class="primary" id="btnSaveAbsence">Guardar Periodo de Ausencia por Días</button>
-            </div>
-            
-            <div class="card">
-                <h3>⏰ Marcar Ausencia Temporal (Por Horas)</h3>
-                <div id="hourlyAbsenceMessage" class="message"></div>
-
-                <label for="hourlyDate">Fecha de Ausencia *</label>
-                <input id="hourlyDate" type="date">
-
-                <div class="row">
-                    <div style="flex:1;">
-                        <label for="startTime">Hora de Inicio *</label>
-                        <input id="startTime" type="time">
-                    </div>
-                    <div style="flex:1;">
-                        <label for="endTime">Hora de Fin *</label>
-                        <input id="endTime" type="time">
-                    </div>
-                </div>
-
-                <label for="hourlyReason">Razón de la Ausencia</label>
-                <input id="hourlyReason" type="text" placeholder="Ej: Cita médica, almuerzo extendido, etc. (Opcional)">
-
-                <button class="primary" id="btnSaveHourlyAbsence">Guardar Ausencia Temporal</button>
-            </div>
-            <div class="card">
-                <h3>📅 Ausencias Programadas (Días y Horas)</h3>
-                <div id="absenceListContainer" class="list-container">
-                    <p style="text-align:center; color:var(--muted);">Cargando ausencias...</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        // Importamos 'set' para guardar, 'get' para leer, 'remove' para eliminar y 'onValue' para escuchar cambios
-        import { getDatabase, ref, set, get, child, remove, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-        // Firebase config (DEBE SER LA MISMA que en el index (2).html)
+        import { getDatabase, ref, set, get, remove, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        
+        // ** CONFIGURACIÓN DE FIREBASE **
         const firebaseConfig = {
-          apiKey: "AIzaSyAN8piM_UR3kLDUnJFYe5diazItfvYIlSA",
-          authDomain: "lazonadelbarbero-b4e75.firebaseapp.com",
-          databaseURL: "https://lazonadelbarbero-b4e75-default-rtdb.firebaseio.com",
-          projectId: "lazonadelbarbero-b4e75",
-          storageBucket: "lazonadelbarbero-b4e75.firebasestorage.app",
-          messagingSenderId: "251180096928",
-          appId: "1:251180096928:web:86d0ab83c7e444af79d8c5",
-          measurementId: "G-G4YL7M4Z00"
+            // ¡ATENCIÓN! REEMPLAZA ESTOS VALORES CON TU CONFIGURACIÓN REAL DE FIREBASE
+            apiKey: "AIzaSyAN8piM_UR3kLDUnJFYe5diazItfvYIlSA",
+            authDomain: "lazonadelbarbero-b4e75.firebaseapp.com",
+            databaseURL: "https://lazonadelbarbero-b4e75-default-rtdb.firebaseio.com",
+            projectId: "lazonadelbarbero-b4e75",
+            storageBucket: "lazonadelbarbero-b4e75.firebasestorage.app",
+            messagingSenderId: "251180096928",
+            appId: "1:251180096928:web:86d0ab83c7e444af79d8c5"
         };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // ** Hardcoded Credentials (ACTUALIZADAS) **
-        const BARBER_CREDENTIALS = {
-            "dilan_admin": { password: "Dilan123", name: "Dilan" },
-            "alejo_admin": { password: "Alejo123", name: "Alejandro" },
-            "leo_admin": { password: "Leo123", name: "Leonardo" },
-            "santi_admin": { password: "Santi123", name: "Santiago" }
+        // ** LISTA DE BARBEROS (COPIADA DE agenda.html) **
+        const BARBERS = {
+          "Dilan": { phone: "573233489369", image: "20251206_084342.jpg" }, 
+          "Alejandro": { phone: "573219621581", image: "20251205_175256.jpg" }, 
+          "Leonardo": { phone: "573215676362", image: "20251205_130628.jpg" }, 
+          "Santiago": { phone: "573022441609", image: "20251205_130541.jpg" }
         };
-        
-        let LOGGED_IN_BARBER = localStorage.getItem('loggedBarber') || null;
 
-        // Almacenamiento global para el estado y Notificación
-        let allAppointmentsCache = [];
-        let currentAppointmentCount = 0;
-        // Sonido de notificación solo para la alerta in-app (si está visible)
-        const notificationSound = new Audio('https://s3-us-west-2.amazonaws.com/s.cdpn.io/12028/notification.mp3'); 
-
-        // DOM Elements
-        const loginContainer = document.getElementById('loginContainer');
-        const dashboardContainer = document.getElementById('dashboardContainer');
-        const barberNameDisplay = document.getElementById('barberNameDisplay');
-        const appointmentList = document.getElementById('appointmentList');
-        const appointmentCount = document.getElementById('appointmentCount');
-
-        // Login DOM
-        const usernameEl = document.getElementById('username');
-        const passwordEl = document.getElementById('password');
-        const btnLogin = document.getElementById('btnLogin');
-        const loginMessageEl = document.getElementById('loginMessage');
-        const btnLogout = document.getElementById('btnLogout');
-
-        // Absence DOM (Días Completos)
-        const startDateEl = document.getElementById('startDate');
-        const endDateEl = document.getElementById('endDate');
-        const reasonEl = document.getElementById('reason');
-        const btnSaveAbsence = document.getElementById('btnSaveAbsence');
+        // Referencias de elementos DOM
+        const barberoSelect = document.getElementById('barberoSelect');
+        const absenceDateInput = document.getElementById('absenceDate');
+        const absenceTypeSelect = document.getElementById('absenceType');
+        const absenceTimeStartInput = document.getElementById('absenceTimeStart');
+        const absenceTimeEndInput = document.getElementById('absenceTimeEnd');    
+        const absenceTimeGroup = document.getElementById('absenceTimeGroup');
+        const absenceReasonInput = document.getElementById('absenceReason'); 
+        const markAbsenceBtn = document.getElementById('markAbsenceBtn');
         const absenceMessageEl = document.getElementById('absenceMessage');
-        const absenceListContainer = document.getElementById('absenceListContainer');
-        
-        // NEW: Absence DOM (Por Horas)
-        const hourlyDateEl = document.getElementById('hourlyDate');
-        const startTimeEl = document.getElementById('startTime');
-        const endTimeEl = document.getElementById('endTime');
-        const hourlyReasonEl = document.getElementById('hourlyReason');
-        const btnSaveHourlyAbsence = document.getElementById('btnSaveHourlyAbsence');
-        const hourlyAbsenceMessageEl = document.getElementById('hourlyAbsenceMessage');
-        
-        // Filter DOM
-        const filterDateEl = document.getElementById('filterDate');
-        const clearDateFilterBtn = document.getElementById('clearDateFilter');
-        
-        // Notification DOM
-        const notificationBanner = document.getElementById('notificationBanner');
+        const absencesListEl = document.getElementById('absencesList');
 
-
-        // --- UTILS ---
-        function minutesToAmPmWithSpace(m){
-            let hh = Math.floor(m/60); const mm = String(m%60).padStart(2,'0');
-            const ampm = hh >= 12 ? 'PM' : 'AM'; hh = hh % 12; if(hh===0) hh=12;
-            return `${hh}:${mm} ${ampm}`;
+        // Función para mostrar mensajes
+        function showMessage(el, type, text) {
+            el.className = `message ${type}`;
+            el.textContent = text;
+            setTimeout(() => el.textContent = '', 5000);
         }
-        function formatFirebaseDate(timestamp) {
-            if (!timestamp) return 'N/A';
-            const date = new Date(timestamp);
-            return date.toLocaleString('es-CO', { 
-                day: 'numeric', 
-                month: 'short', 
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            }).replace('.', '');
+        
+        // Conversión de minutos a hora HH:MM AM/PM
+        function minutesToTime(m) {
+            const h = Math.floor(m / 60);
+            const mi = m % 60;
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            const h12 = h % 12 || 12;
+            return `${h12}:${String(mi).padStart(2, '0')} ${ampm}`;
         }
-        // NEW: Convierte "HH:MM" a minutos desde la medianoche
+        
+        // Conversión de hora HH:MM a minutos
         function timeToMinutes(timeStr) {
-            const [hours, minutes] = timeStr.split(':').map(Number);
-            return hours * 60 + minutes;
-        }
-        
-        // Helper para procesar la data de Firebase en un array ordenado
-        function processSnapshot(snapshot) {
-            const allAppointments = [];
-            if (snapshot.exists()) {
-                const datesData = snapshot.val();
-                for (const dateISO in datesData) {
-                    const appointmentsOnDate = datesData[dateISO];
-                    for (const key in appointmentsOnDate) {
-                        const appt = appointmentsOnDate[key];
-                        appt.dateISO = dateISO;
-                        appt.id = key; 
-                        appt.startMinutes = Number(appt.startMinutes);
-                        appt.endMinutes = Number(appt.endMinutes || (appt.startMinutes + appt.durationMinutes));
-                        // NEW: Asegurar el estado de 'completed'
-                        appt.completed = appt.completed || false; 
-                        allAppointments.push(appt);
-                    }
-                }
-            }
-            // Sort by date (oldest first) and then by start time
-            allAppointments.sort((a, b) => {
-                if (a.dateISO > b.dateISO) return 1;
-                if (a.dateISO < b.dateISO) return -1;
-                return a.startMinutes - b.startMinutes;
-            });
-            return allAppointments;
+            const [h, m] = timeStr.split(':').map(Number);
+            return (h * 60) + m;
         }
 
-
-        // --- MESSAGE HANDLERS ---
-        function showMessage(element, type, text) {
-            element.classList.remove('success', 'error');
-            element.classList.add(type);
-            element.textContent = text;
-            element.style.display = 'block';
-            setTimeout(() => { element.style.display = 'none'; }, 5000);
-        }
-        
-        // --- Solicitar permiso de notificación ---
-        function requestNotificationPermission() {
-            if (!("Notification" in window)) {
-                console.log("Este navegador no soporta notificaciones de escritorio.");
-            } else if (Notification.permission !== 'granted') {
-                Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                        console.log("Permiso de notificación concedido.");
-                    } else {
-                        console.log("Permiso de notificación denegado.");
-                    }
-                });
-            }
+        // Función para obtener la fecha actual en formato YYYY-MM-DD
+        function getCurrentDate() {
+            return new Date().toISOString().split('T')[0];
         }
 
+        // Inicializar campos de fecha y hora
+        absenceDateInput.value = getCurrentDate();
+        absenceTimeStartInput.value = '09:00';
+        absenceTimeEndInput.value = '10:00'; 
 
-        // --- AUTHENTICATION LOGIC ---
-        function checkLoginState() {
-            if (LOGGED_IN_BARBER) {
-                barberNameDisplay.textContent = LOGGED_IN_BARBER;
-                loginContainer.style.display = 'none';
-                dashboardContainer.style.display = 'block';
-                loadDashboardData(LOGGED_IN_BARBER);
-
-                // Configurar listeners de filtro para que trabajen con la caché
-                filterDateEl.addEventListener('change', () => refreshAppointmentDisplay(LOGGED_IN_BARBER));
-                clearDateFilterBtn.addEventListener('click', () => {
-                    filterDateEl.value = '';
-                    refreshAppointmentDisplay(LOGGED_IN_BARBER);
-                });
-            } else {
-                loginContainer.style.display = 'block';
-                dashboardContainer.style.display = 'none';
-                usernameEl.value = '';
-                passwordEl.value = '';
-                filterDateEl.value = ''; // Limpiar filtro al cerrar sesión
-                appointmentList.innerHTML = '';
-                usernameEl.focus();
-            }
-        }
-
-        btnLogin.addEventListener('click', () => {
-            const username = usernameEl.value.trim();
-            const password = passwordEl.value.trim();
-            
-            const user = BARBER_CREDENTIALS[username];
-
-            if(user && user.password === password) {
-                LOGGED_IN_BARBER = user.name;
-                localStorage.setItem('loggedBarber', LOGGED_IN_BARBER);
-                showMessage(loginMessageEl, 'success', `Bienvenido, ${LOGGED_IN_BARBER}.`);
-                requestNotificationPermission(); // Pide permiso de notificación
-                checkLoginState();
-            } else {
-                showMessage(loginMessageEl, 'error', 'Usuario o contraseña incorrectos.');
-            }
-        });
-
-        btnLogout.addEventListener('click', () => {
-            LOGGED_IN_BARBER = null;
-            localStorage.removeItem('loggedBarber');
-            showMessage(loginMessageEl, 'success', 'Sesión cerrada. Vuelve pronto.');
-            checkLoginState();
+        // Ocultar/Mostrar selector de hora según el tipo de ausencia
+        absenceTypeSelect.addEventListener('change', () => {
+            absenceTimeGroup.style.display = absenceTypeSelect.value === 'hour' ? 'block' : 'none';
         });
         
-        // --- DASHBOARD DATA LOADING ---
-
-        async function loadDashboardData(barbero) {
-            await displayAbsences(barbero);
-            setupAppointmentListener(barbero); // Inicializa el listener en tiempo real
-        }
-
-        // --- APPOINTMENT LISTENER LOGIC (Real-time updates) ---
-
-        function setupAppointmentListener(barbero) {
-            const appointmentsRef = ref(db, `appointments/${barbero}`);
+        // -------------------------------------------------------------
+        // FUNCIÓN: Creación de Ausencias 
+        // -------------------------------------------------------------
+        async function createAbsence() {
+            const barbero = barberoSelect.value;
+            const date = absenceDateInput.value; // <-- Aquí se lee la fecha
+            const type = absenceTypeSelect.value;
             
-            // onValue escucha cambios en tiempo real
-            onValue(appointmentsRef, (snapshot) => {
-                const newAppointmentsData = processSnapshot(snapshot);
-                
-                // 1. Check for new appointments 
-                if (currentAppointmentCount > 0 && newAppointmentsData.length > currentAppointmentCount) {
-                    // Solo notificar si el aumento no es por el estado "completed"
-                    const currentActive = allAppointmentsCache.filter(a => !a.completed).length;
-                    const newActive = newAppointmentsData.filter(a => !a.completed).length;
-                    
-                    if (newActive > currentActive) {
-                       triggerNewAppointmentNotification(newAppointmentsData);
-                    }
-                }
-                
-                // 2. Update global state
-                allAppointmentsCache = newAppointmentsData;
-                currentAppointmentCount = newAppointmentsData.length;
-
-                // 3. Refresh display with the new data (and apply current filter)
-                refreshAppointmentDisplay(barbero);
-            });
-        }
-        
-        function triggerNewAppointmentNotification(newAppointmentsData) {
-            // Encontrar la última cita añadida comparando con la caché antigua
-            const oldIds = new Set(allAppointmentsCache.map(a => `${a.dateISO}-${a.id}`));
-            const latest = newAppointmentsData.find(appt => !oldIds.has(`${appt.dateISO}-${appt.id}`));
+            const motivo = absenceReasonInput.value.trim() || (type === 'day' ? 'Día no disponible.' : 'Bloqueo temporal por horas.'); 
             
-            const clientName = latest ? latest.nombre : 'Cliente Desconocido';
-            const clientTime = latest ? minutesToAmPmWithSpace(latest.startMinutes) : 'N/A';
-            
-            // Si no se encuentra una "nueva" cita, no notificar (puede ser un cambio de estado)
-            if (!latest) return;
-            
-            // --- 1. WEB PUSH NOTIFICATION (OS-style) ---
-            if (Notification.permission === 'granted') {
-                new Notification('🚨 ¡NUEVA CITA AGENDADA!', {
-                    body: `Cliente: ${clientName} - Hora: ${clientTime} - Barbero: ${LOGGED_IN_BARBER}`,
-                    icon: '1000070893.png', 
-                    vibrate: [200, 100, 200]
-                });
-            }
-            
-            // --- 2. IN-APP BANNER (Sonido y alerta dentro de la página) ---
-            if(document.visibilityState === 'visible') {
-                notificationSound.play().catch(e => console.log('Error playing sound:', e));
-            }
-
-            notificationBanner.textContent = `🔔 ¡NUEVA CITA AGENDADA! Cliente: ${clientName} - Hora: ${clientTime}`;
-            notificationBanner.classList.add('success');
-            notificationBanner.style.display = 'block';
-            
-            // Ocultar después de 7 segundos
-            setTimeout(() => {
-                notificationBanner.style.display = 'none';
-            }, 7000);
-        }
-
-        // --- APPOINTMENT LIST DISPLAY (Modified to use cache) ---
-        function refreshAppointmentDisplay(barbero) {
-            // Usamos la caché global
-            const allAppointments = allAppointmentsCache;
-            
-            // Aplicar Filtro de Fecha
-            const filterDate = filterDateEl.value; 
-            let filteredAppointments = allAppointments;
-
-            if (filterDate) {
-                filteredAppointments = allAppointments.filter(appt => appt.dateISO === filterDate);
-            }
-
-            appointmentCount.textContent = `(${filteredAppointments.length} Citas)`;
-
-            if (filteredAppointments.length === 0) {
-                appointmentList.innerHTML = `<p style="text-align:center; color:var(--muted);">No hay citas agendadas ${filterDate ? 'para la fecha seleccionada' : ''} para ti, ${barbero}.</p>`;
+            if (!barbero || !date || !type) {
+                showMessage(absenceMessageEl, 'error', 'Por favor, selecciona un barbero, una fecha y un tipo de ausencia.');
                 return;
             }
 
-            let tableHTML = `
-                <table class="appointment-table">
-                    <thead>
-                        <tr>
-                            <th>Cliente</th>
-                            <th>Teléfono</th>
-                            <th>Servicio</th>
-                            <th>Fecha y Hora</th>
-                            <th>Creada</th>
-                            <th>Acciones</th> 
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            
-            filteredAppointments.forEach(appt => {
-                const horaNice = minutesToAmPmWithSpace(appt.startMinutes);
-                
-                // NEW: Lógica para citas pasadas o completadas
-                const todayISO = new Date().toISOString().split('T')[0];
-                const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
-                
-                const isPast = appt.dateISO < todayISO || (appt.dateISO === todayISO && appt.endMinutes < nowMinutes);
-                const isCompleted = appt.completed === true;
-
-                // Aplicar estilos
-                let rowClasses = '';
-                let textClasses = '';
-                if (isCompleted) {
-                    rowClasses = 'completed-row';
-                    textClasses = 'completed-text';
-                } else if (isPast) {
-                    rowClasses = ''; // No sobreescribir completed-row
-                    textClasses = 'completed-text'; // Usar solo tachado para pasado no completado
-                }
-
-                const fullName = appt.nombre || 'N/A';
-                const nameParts = fullName.split(' ');
-                const firstName = nameParts[0];
-                const lastName = nameParts.slice(1).join(' ');
-
-                tableHTML += `
-                    <tr class="${rowClasses}">
-                        <td class="${textClasses}">${firstName} <br><strong>${lastName}</strong></td>
-                        <td class="${textClasses}">
-                            <a href="https://wa.me/${appt.telefono}" target="_blank" class="phone-link" style="${isCompleted || isPast ? 'opacity: 0.8;' : ''}">
-                                ${appt.telefono} 📲
-                            </a>
-                        </td>
-                        <td class="${textClasses}">${appt.servicio} (${appt.durationMinutes}m)</td>
-                        <td class="${textClasses}">
-                            ${appt.dateISO} 
-                            <br>
-                            <strong>${horaNice}</strong>
-                        </td>
-                        <td class="${textClasses}"><span class="date-created">${formatFirebaseDate(appt.createdAt)}</span></td>
-                        <td class="action-col">
-                            ${!isCompleted ? `
-                                <button class="action-btn complete-btn" 
-                                    data-barbero="${barbero}" 
-                                    data-date="${appt.dateISO}" 
-                                    data-appt-id="${appt.id}" 
-                                    title="Marcar como realizada">
-                                    ✅ Realizada
-                                </button>
-                            ` : ''}
-                            <button class="action-btn delete-btn" 
-                                data-barbero="${barbero}" 
-                                data-date="${appt.dateISO}" 
-                                data-appt-id="${appt.id}" 
-                                title="Eliminar la cita">
-                                🗑️ Eliminar
-                            </button>
-                            <a href="https://wa.me/${appt.telefono}" target="_blank" class="action-btn edit-btn" title="Contactar al cliente para editar/reagendar">
-                                ✏️ Editar
-                            </a>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            tableHTML += `</tbody></table>`;
-            appointmentList.innerHTML = tableHTML;
-            
-            // Añadir listeners al botón de eliminar
-            appointmentList.querySelectorAll('.delete-btn').forEach(button => {
-                button.removeEventListener('click', handleDeleteAppointment); 
-                button.addEventListener('click', handleDeleteAppointment);
-            });
-            
-            // NEW: Añadir listeners al botón de completar
-            appointmentList.querySelectorAll('.complete-btn').forEach(button => {
-                button.removeEventListener('click', handleCompleteAppointment); 
-                button.addEventListener('click', handleCompleteAppointment);
-            });
-            
-        }
-
-
-        // --- DELETE APPOINTMENT LOGIC ---
-        async function handleDeleteAppointment(event) {
-            if(!confirm('¿Estás seguro de que quieres ELIMINAR esta cita? Esta acción es irreversible.')) return;
-            
-            const button = event.target;
-            const barbero = button.dataset.barbero;
-            const dateISO = button.dataset.date;
-            const appointmentId = button.dataset.apptId; 
-
-            if(!barbero || !dateISO || !appointmentId) {
-                showMessage(loginMessageEl, 'error', 'Error interno: Faltan datos de la cita.');
-                return;
-            }
-            
-            button.disabled = true;
-            button.textContent = '...';
+            markAbsenceBtn.disabled = true;
+            markAbsenceBtn.textContent = 'Guardando...';
 
             try {
-                // Path: appointments/{barbero}/{dateISO}/{appointmentId}
-                const path = `appointments/${barbero}/${dateISO}/${appointmentId}`;
-                await remove(ref(db, path));
+                const absenceNodeRef = ref(db, `absences/${barbero}/${date}`);
                 
-                // La función onValue se encargará de refrescar la lista automáticamente
-                showMessage(loginMessageEl, 'success', `Cita del ${dateISO} eliminada correctamente.`);
-                
-            } catch(error) {
-                console.error("Error deleting appointment:", error);
-                showMessage(loginMessageEl, 'error', 'Error al eliminar la cita. Revisa la consola.');
-            }
-        }
-        
-        // NEW: COMPLETE APPOINTMENT LOGIC
-        async function handleCompleteAppointment(event) {
-            if(!confirm('¿Marcar esta cita como REALIZADA con éxito?')) return;
-            
-            const button = event.target;
-            const barbero = button.dataset.barbero;
-            const dateISO = button.dataset.date;
-            const appointmentId = button.dataset.apptId; 
-
-            if(!barbero || !dateISO || !appointmentId) {
-                showMessage(loginMessageEl, 'error', 'Error interno: Faltan datos de la cita.');
-                return;
-            }
-            
-            button.disabled = true;
-            button.textContent = '...';
-
-            try {
-                // Path: appointments/{barbero}/{dateISO}/{appointmentId}
-                const path = `appointments/${barbero}/${dateISO}/${appointmentId}/completed`;
-                await set(ref(db, path), true);
-                
-                // La función onValue se encargará de refrescar la lista automáticamente
-                showMessage(loginMessageEl, 'success', `Cita del ${dateISO} marcada como Realizada.`);
-                
-            } catch(error) {
-                console.error("Error completing appointment:", error);
-                showMessage(loginMessageEl, 'error', 'Error al marcar la cita como realizada.');
-            }
-        }
-
-
-        // --- ABSENCE LOGIC (MODIFICADO PARA INCLUIR HORAS) ---
-
-        async function fetchUnavailableDates(barbero){
-            const path = `unavailableDates/${barbero}`;
-            const snap = await get(child(ref(db), path));
-            if(snap.exists()){
-                return snap.val();
-            }
-            // Retornar la estructura base con los dos tipos
-            return {
-                days: {},
-                hours: {}
-            };
-        }
-
-        async function displayAbsences(barbero) {
-            absenceListContainer.innerHTML = '<p style="text-align:center;"><span class="loader"></span> Cargando...</p>';
-            try {
-                // Asumimos que la estructura en Firebase será: unavailableDates/{barbero}/{days|hours}
-                const allData = await fetchUnavailableDates(barbero);
-                const dayAbsences = allData.days || {};
-                const hourAbsences = allData.hours || {};
-                
-                const allAbsences = [];
-                const today = new Date().toISOString().split('T')[0];
-
-                // 1. Días Completos
-                for (const startDate in dayAbsences) {
-                    const period = dayAbsences[startDate];
-                    allAbsences.push({
-                        type: 'day',
-                        startDate: startDate,
-                        endDate: period.endDate,
-                        reason: period.reason,
-                        isPast: period.endDate < today,
-                        sortKey: startDate // Clave de ordenación
+                if (type === 'day') {
+                    // Marcar día completo
+                    await set(absenceNodeRef, {
+                        isFullDay: true,
+                        reason: motivo,
+                        createdAt: Date.now()
                     });
-                }
+                    showMessage(absenceMessageEl, 'success', `Ausencia de día completo marcada: ${motivo}`);
+                } 
                 
-                // 2. Ausencias por Horas
-                for (const date in hourAbsences) {
-                    const periods = hourAbsences[date];
-                    for (const startMinutes in periods) {
-                        const period = periods[startMinutes];
+                else if (type === 'hour') {
+                    // Marcar intervalo de hora personalizado
+                    const timeStart = absenceTimeStartInput.value;
+                    const timeEnd = absenceTimeEndInput.value;
+
+                    if (!timeStart || !timeEnd) {
+                         showMessage(absenceMessageEl, 'error', 'Debes seleccionar una hora de inicio y una hora de finalización.');
+                         markAbsenceBtn.disabled = false;
+                         markAbsenceBtn.textContent = 'Marcar Ausencia';
+                         return;
+                    }
+                    
+                    const startMinutes = timeToMinutes(timeStart);
+                    const endMinutes = timeToMinutes(timeEnd);
+
+                    if (startMinutes >= endMinutes) {
+                         showMessage(absenceMessageEl, 'error', 'La hora de inicio debe ser anterior a la hora final.');
+                         markAbsenceBtn.disabled = false;
+                         markAbsenceBtn.textContent = 'Marcar Ausencia';
+                         return;
+                    }
+                    
+                    const interval = {
+                        start: startMinutes,
+                        end: endMinutes,
+                        reason: motivo
+                    };
+
+                    await runTransaction(absenceNodeRef, (currentData) => {
+                        if (currentData && currentData.isFullDay) {
+                            throw new Error('Full day absence already set. Cannot add hourly block.');
+                        }
                         
-                        // NEW: Formato para mostrar
-                        const startNice = minutesToAmPmWithSpace(Number(startMinutes));
-                        const endNice = minutesToAmPmWithSpace(Number(period.endMinutes));
+                        if (currentData === null) {
+                            currentData = { intervals: [] };
+                        }
+                        if (!currentData.intervals) {
+                            currentData.intervals = [];
+                        }
                         
-                        allAbsences.push({
-                            type: 'hour',
-                            date: date,
-                            startMinutes: Number(startMinutes),
-                            endMinutes: Number(period.endMinutes),
-                            reason: period.reason,
-                            isPast: date < today || (date === today && period.endMinutes < (new Date().getHours() * 60 + new Date().getMinutes())),
-                            sortKey: `${date}-${String(startMinutes).padStart(4, '0')}` // Clave de ordenación
+                        // Añadir el nuevo intervalo
+                        currentData.intervals.push(interval);
+                        return currentData;
+                    });
+                    
+                    showMessage(absenceMessageEl, 'success', `Bloqueo de ${minutesToTime(startMinutes)} a ${minutesToTime(endMinutes)} marcado: ${motivo}`);
+                }
+
+                absenceReasonInput.value = ''; 
+                await displayAbsences(barbero); 
+            } catch(error) {
+                console.error("Error creating absence:", error);
+                let message = 'Error al marcar la ausencia.';
+                if (error.message.includes('Full day absence')) {
+                    message = 'Ya existe una ausencia de día completo para esta fecha. No se puede añadir un bloqueo por hora.';
+                }
+                showMessage(absenceMessageEl, 'error', message);
+            } finally {
+                markAbsenceBtn.disabled = false;
+                markAbsenceBtn.textContent = 'Marcar Ausencia';
+            }
+        }
+        
+        markAbsenceBtn.addEventListener('click', createAbsence);
+
+        // -------------------------------------------------------------
+        // FUNCIÓN: Mostrar Ausencias Registradas
+        // -------------------------------------------------------------
+        async function displayAbsences(barbero) {
+            absencesListEl.innerHTML = '';
+            
+            const absencesRef = ref(db, `absences/${barbero}`);
+            const snapshot = await get(absencesRef);
+            
+            if (snapshot.exists()) {
+                let foundAbsences = false;
+                
+                // Ordenar por fecha antes de iterar
+                Object.entries(snapshot.val()).sort(([dateA], [dateB]) => dateA.localeCompare(dateB)).forEach(([date, data]) => {
+                    
+                    // 1. Ausencia de Día Completo
+                    if (data.isFullDay) {
+                        foundAbsences = true;
+                        const motivo = data.reason || 'Día no disponible';
+                        const li = document.createElement('li');
+                        li.innerHTML = `
+                            <span>**DÍA COMPLETO**: ${date} - Motivo: ${motivo}</span>
+                            <button class="btn btn-danger" data-type="day" data-date="${date}" onclick="removeAbsence(this)">Eliminar</button>
+                        `;
+                        absencesListEl.appendChild(li);
+                    }
+
+                    // 2. Ausencias por Intervalos
+                    if (data.intervals && Array.isArray(data.intervals)) {
+                        data.intervals.forEach((interval, index) => {
+                            foundAbsences = true;
+                            const startTime = minutesToTime(interval.start);
+                            const endTime = minutesToTime(interval.end);
+                            const motivo = interval.reason || 'Bloqueo temporal';
+
+                            const li = document.createElement('li');
+                            li.innerHTML = `
+                                <span>HORA: ${date} de ${startTime} a ${endTime} - Motivo: ${motivo}</span>
+                                <button class="btn btn-danger" data-type="hour" data-date="${date}" data-index="${index}" onclick="removeAbsence(this)">Eliminar</button>
+                            `;
+                            absencesListEl.appendChild(li);
                         });
                     }
-                }
-                
-                // Ordenar: primero por fecha, luego por minutos (para horas)
-                allAbsences.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
-
-
-                if(allAbsences.length === 0) {
-                    absenceListContainer.innerHTML = `<p style="text-align:center; color:var(--muted);">No hay ausencias programadas para ti.</p>`;
-                    return;
-                }
-
-                let html = '';
-                
-                allAbsences.forEach(abs => {
-                    const style = abs.isPast ? 'opacity: 0.6; text-decoration: line-through;' : '';
-                    let content;
-                    let deleteBtn;
-                    
-                    if (abs.type === 'day') {
-                        content = `
-                            <strong>${abs.startDate}</strong> al <strong>${abs.endDate}</strong> 
-                            <span style="color:var(--accent); margin-left: 8px;">(${abs.reason})</span>
-                            ${abs.isPast ? '<span style="color:var(--danger); font-size:11px;">(Pasado)</span>' : ''}
-                        `;
-                        deleteBtn = `
-                            <button class="delete-btn absence" 
-                                data-barbero="${barbero}" 
-                                data-type="day"
-                                data-startdate="${abs.startDate}">Eliminar</button>
-                        `;
-                    } else { // type === 'hour'
-                        content = `
-                            ⏰ **${abs.date}** de **${minutesToAmPmWithSpace(abs.startMinutes)}** a **${minutesToAmPmWithSpace(abs.endMinutes)}** <span style="color:var(--accent-2); margin-left: 8px;">(${abs.reason})</span>
-                            ${abs.isPast ? '<span style="color:var(--danger); font-size:11px;">(Pasado)</span>' : ''}
-                        `;
-                        deleteBtn = `
-                            <button class="delete-btn absence" 
-                                data-barbero="${barbero}" 
-                                data-type="hour"
-                                data-date="${abs.date}"
-                                data-startminutes="${abs.startMinutes}">Eliminar</button>
-                        `;
-                    }
-                    
-                    html += `
-                        <div class="period-item" style="${style}">
-                            <div>${content}</div>
-                            ${deleteBtn}
-                        </div>
-                    `;
                 });
                 
-                absenceListContainer.innerHTML = html;
-                
-                absenceListContainer.querySelectorAll('.delete-btn.absence').forEach(button => {
-                    button.removeEventListener('click', handleDeleteAbsence); 
-                    button.addEventListener('click', handleDeleteAbsence);
-                });
-
-            } catch(error) {
-                console.error("Error displaying absences:", error);
-                absenceListContainer.innerHTML = '<p style="text-align:center; color:var(--danger);">Error cargando ausencias.</p>';
+                if(!foundAbsences) {
+                    absencesListEl.innerHTML = '<p>No hay ausencias registradas para este barbero.</p>';
+                }
+            } else {
+                absencesListEl.innerHTML = '<p>No hay ausencias registradas para este barbero.</p>';
             }
         }
         
-        // Lógica de Días Completos (SIN CAMBIOS Mayores)
-        btnSaveAbsence.addEventListener('click', async () => {
-            const barbero = LOGGED_IN_BARBER; 
-            const startDate = startDateEl.value;
-            const endDate = endDateEl.value;
-            const reason = reasonEl.value.trim();
-            
-            if(!barbero || !startDate || !endDate){
-                showMessage(absenceMessageEl, 'error', 'Por favor, selecciona la fecha de inicio y fecha de fin.');
-                return;
-            }
-
-            if(startDate > endDate){
-                showMessage(absenceMessageEl, 'error', 'La fecha de inicio no puede ser posterior a la fecha de fin.');
-                return;
-            }
-            
-            btnSaveAbsence.disabled = true;
-            btnSaveAbsence.innerHTML = 'Guardando... <span class="loader"></span>';
-
-            try {
-                // Nuevo Path: unavailableDates/{barbero}/days/{startDate}
-                const path = `unavailableDates/${barbero}/days/${startDate}`; 
-                const data = {
-                    endDate: endDate,
-                    reason: reason || 'Ausencia de día completo'
-                };
-
-                await set(ref(db, path), data);
-                
-                showMessage(absenceMessageEl, 'success', `Ausencia de días guardada correctamente del ${startDate} al ${endDate}.`);
-                
-                startDateEl.value = '';
-                endDateEl.value = '';
-                reasonEl.value = '';
-                await displayAbsences(barbero);
-                
-            } catch(error) {
-                console.error("Error saving day absence:", error);
-                showMessage(absenceMessageEl, 'error', 'Error al guardar la ausencia. Revisa la consola.');
-            } finally {
-                btnSaveAbsence.disabled = false;
-                btnSaveAbsence.textContent = 'Guardar Periodo de Ausencia por Días';
-            }
-        });
-        
-        // NEW: Lógica de Ausencias por Horas
-        btnSaveHourlyAbsence.addEventListener('click', async () => {
-            const barbero = LOGGED_IN_BARBER; 
-            const date = hourlyDateEl.value;
-            const startTimeStr = startTimeEl.value;
-            const endTimeStr = endTimeEl.value;
-            const reason = hourlyReasonEl.value.trim();
-            
-            if(!barbero || !date || !startTimeStr || !endTimeStr){
-                showMessage(hourlyAbsenceMessageEl, 'error', 'Por favor, selecciona la fecha, hora de inicio y hora de fin.');
-                return;
-            }
-            
-            const startMinutes = timeToMinutes(startTimeStr);
-            const endMinutes = timeToMinutes(endTimeStr);
-
-            if(startMinutes >= endMinutes){
-                showMessage(hourlyAbsenceMessageEl, 'error', 'La hora de inicio debe ser anterior a la hora de fin.');
-                return;
-            }
-            
-            btnSaveHourlyAbsence.disabled = true;
-            btnSaveHourlyAbsence.innerHTML = 'Guardando... <span class="loader"></span>';
-
-            try {
-                // Nuevo Path: unavailableDates/{barbero}/hours/{date}/{startMinutes}
-                const path = `unavailableDates/${barbero}/hours/${date}/${startMinutes}`;
-                const data = {
-                    endMinutes: endMinutes,
-                    reason: reason || 'Ausencia temporal por horas'
-                };
-
-                await set(ref(db, path), data);
-                
-                showMessage(hourlyAbsenceMessageEl, 'success', `Ausencia por horas guardada para el ${date} de ${startTimeStr} a ${endTimeStr}.`);
-                
-                hourlyDateEl.value = '';
-                startTimeEl.value = '';
-                endTimeEl.value = '';
-                hourlyReasonEl.value = '';
-                await displayAbsences(barbero);
-                
-            } catch(error) {
-                console.error("Error saving hourly absence:", error);
-                showMessage(hourlyAbsenceMessageEl, 'error', 'Error al guardar la ausencia por horas. Revisa la consola.');
-            } finally {
-                btnSaveHourlyAbsence.disabled = false;
-                btnSaveHourlyAbsence.textContent = 'Guardar Ausencia Temporal';
+        // Listener para cargar ausencias al cambiar el barbero
+        barberoSelect.addEventListener('change', (e) => {
+            if (e.target.value) {
+                displayAbsences(e.target.value);
+            } else {
+                absencesListEl.innerHTML = '';
             }
         });
 
+        // -------------------------------------------------------------
+        // FUNCIÓN: Eliminación de Ausencias
+        // -------------------------------------------------------------
+        window.removeAbsence = async (button) => { 
+            const barbero = barberoSelect.value;
+            if (!barbero) return;
 
-        async function handleDeleteAbsence(event) {
-            if(!confirm('¿Estás seguro de que quieres eliminar este periodo de ausencia?')) return;
-            
-            const button = event.target;
-            const barbero = button.dataset.barbero;
-            const type = button.dataset.type; // 'day' o 'hour'
+            const type = button.dataset.type;
+            const date = button.dataset.date;
             
             button.disabled = true;
             button.textContent = '...';
-
-            let path;
-            if (type === 'day') {
-                const startDate = button.dataset.startdate;
-                path = `unavailableDates/${barbero}/days/${startDate}`;
-            } else if (type === 'hour') {
-                const date = button.dataset.date;
-                const startMinutes = button.dataset.startminutes;
-                path = `unavailableDates/${barbero}/hours/${date}/${startMinutes}`;
-            } else {
-                showMessage(absenceMessageEl, 'error', 'Error interno: Tipo de ausencia desconocido.');
-                button.disabled = false;
-                button.textContent = 'Eliminar';
-                return;
-            }
-
+            
             try {
-                await remove(ref(db, path));
-                showMessage(absenceMessageEl, 'success', `Ausencia eliminada correctamente.`);
+                const absenceNodeRef = ref(db, `absences/${barbero}/${date}`);
+                
+                if (type === 'day') {
+                    // Eliminar la entrada completa del día
+                    await remove(absenceNodeRef);
+                    showMessage(absenceMessageEl, 'success', `Ausencia de día completo (${date}) eliminada.`);
+                } 
+                
+                else if (type === 'hour') {
+                    // Eliminar un intervalo específico del array usando runTransaction
+                    const indexToRemove = parseInt(button.dataset.index);
+                    
+                    await runTransaction(absenceNodeRef, (currentData) => {
+                        if (currentData === null || !currentData.intervals || !Array.isArray(currentData.intervals)) {
+                            return currentData; 
+                        }
+                        
+                        const newIntervals = currentData.intervals.filter((_, index) => index !== indexToRemove);
+                        
+                        // Si el array queda vacío Y NO es una ausencia de día completo, eliminamos el nodo del día
+                        if (newIntervals.length === 0 && !currentData.isFullDay) {
+                            return null; 
+                        }
+                        
+                        currentData.intervals = newIntervals;
+                        return currentData; 
+                    });
+                    
+                    showMessage(absenceMessageEl, 'success', `Bloqueo horario (${date}) eliminado.`);
+                }
+
                 await displayAbsences(barbero); 
             } catch(error) {
                 console.error("Error deleting absence:", error);
@@ -869,10 +326,84 @@
                 }
             }
         }
+        
+        // -------------------------------------------------------------
+        // FUNCIÓN: Inicialización del Barbero Select
+        // -------------------------------------------------------------
+        function setupBarberoSelect(){
+             barberoSelect.innerHTML = '<option value="">-- Selecciona un Barbero --</option>';
+             for(const name in BARBERS){
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                barberoSelect.appendChild(opt);
+             }
+        }
 
         // Inicialización
-        checkLoginState();
+        setupBarberoSelect();
 
     </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Panel de Administración</h1>
+
+        <div class="card">
+            <h2>Seleccionar Barbero</h2>
+            <div class="input-group">
+                <label for="barberoSelect">Barbero:</label>
+                <select id="barberoSelect">
+                    <option value="">-- Selecciona un Barbero --</option>
+                    </select>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Marcar Ausencia</h2>
+            <div id="absenceMessage"></div>
+            
+            <div class="input-group">
+                <label for="absenceDate">Fecha:</label>
+                <input type="date" id="absenceDate"> 
+            </div>
+
+            <div class="input-group">
+                <label for="absenceType">Tipo de Ausencia:</label>
+                <select id="absenceType">
+                    <option value="day">Día Completo (Bloquea todo el día)</option>
+                    <option value="hour">Bloqueo por Horas (Intervalo)</option>
+                </select>
+            </div>
+            
+            <div class="input-group" id="absenceTimeGroup" style="display: none;">
+                <div class="time-group">
+                    <div>
+                        <label for="absenceTimeStart">Hora de Inicio:</label>
+                        <input type="time" id="absenceTimeStart" step="300" value="09:00"> 
+                    </div>
+                    <div>
+                        <label for="absenceTimeEnd">Hora de Finalización:</label>
+                        <input type="time" id="absenceTimeEnd" step="300" value="10:00"> 
+                    </div>
+                </div>
+                <div class="small">Selecciona el rango exacto que debe ser bloqueado para agendamiento.</div>
+            </div>
+
+            <div class="input-group">
+                <label for="absenceReason">Motivo de la Ausencia (Opcional):</label>
+                <textarea id="absenceReason" placeholder="Vacaciones, cita médica, festivo, etc. Este motivo aparecerá en la agenda." rows="2"></textarea>
+            </div>
+            
+            <button id="markAbsenceBtn" class="btn btn-primary" style="background-color: var(--danger);">Marcar Ausencia</button>
+        </div>
+
+        <div class="card">
+            <h2>Ausencias Registradas</h2>
+            <ul class="absences-list" id="absencesList">
+                <p>Selecciona un barbero para ver las ausencias.</p>
+            </ul>
+        </div>
+    </div>
 </body>
 </html>
