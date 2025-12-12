@@ -692,7 +692,8 @@
       
       try{
         await runTransaction(ref(db, path), (current) => {
-          if(current === null) current = { isFullDay: false, intervals: [] };
+          // *** CORRECCIÓN 1: Se inicializa 'reason' con string vacío si el nodo es nuevo ***
+          if(current === null) current = { isFullDay: false, intervals: [], reason: '' }; 
 
           if(type === 'day'){
             // Ausencia de día completo siempre reemplaza
@@ -704,10 +705,6 @@
             const newInterval = dataToSave.intervals[0];
             let intervals = current.intervals || [];
 
-            // Verificar si el nuevo intervalo entra en conflicto con citas existentes
-            // (Esta validación es compleja para hacerla dentro de la transaccion, se hace fuera para simplicidad, o se delega al barbero)
-            // Para fines de este ejercicio, solo verificaremos conflicto con otras ausencias.
-
             // Verificar conflicto con ausencias existentes
             for(const existing of intervals){
                 if(newInterval.start < existing.end && newInterval.end > existing.start){
@@ -718,10 +715,12 @@
             intervals.push(newInterval);
             intervals.sort((a,b) => a.start - b.start);
 
-            // Fusionar intervalos solapados (para mantener la DB limpia, aunque la comprobación ya falló)
-            // ... (Lógica de fusión más compleja, omitida por simplicidad, pero se recomienda implementarla)
-
-            return { isFullDay: false, intervals: intervals, reason: current.reason };
+            // *** CORRECCIÓN 2: Se usa un valor por defecto si 'current.reason' es null/undefined ***
+            return { 
+                isFullDay: false, 
+                intervals: intervals, 
+                reason: current.reason || 'Bloqueo de horario parcial' 
+            };
           }
         });
         
@@ -834,24 +833,4 @@
                          return null; // Si no quedan intervalos, eliminamos el nodo de la fecha
                     }
                     
-                    current.intervals = intervals;
-                    return current;
-                });
-            }
-            
-            alert('Bloqueo de agenda eliminado con éxito.');
-            loadAbsences();
-            loadAppointments(); // Recargar citas para actualizar disponibilidad visual
-        } catch(e){
-            alert('Error al eliminar el bloqueo de agenda.');
-            console.error(e);
-        }
-    }
-
-    // Inicializar fecha por defecto
-    absenceDateInput.value = getCurrentDateISO();
-    intervalDateInput.value = getCurrentDateISO();
-    
-</script>
-</body>
-</html>
+                    current.intervals
