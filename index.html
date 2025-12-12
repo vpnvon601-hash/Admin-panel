@@ -232,12 +232,12 @@
     const CLOSE_MIN = 22 * 60; // 10:00 PM (22:00)
     
     // ** LISTA DE BARBEROS Y SUS CONTRASEÑAS (Debe ser REAL y SECRETA) **
-    // ESTO ES TEMPORAL y MUY INSEGURO. Idealmente, se debe usar Firebase Authentication.
+    // !!! RECUERDA CAMBIAR ESTAS CONTRASEÑAS POR SEGURIDAD !!!
     const BARBERS_AUTH = {
-      "Dilan": "dilan123", // Reemplazar
-      "Alejandro": "alejo123", // Reemplazar
-      "Leonardo": "leo123", // Reemplazar
-      "Santiago": "santi123" // Reemplazar
+      "Dilan": "dilan123", 
+      "Alejandro": "alejo123", 
+      "Leonardo": "leo123", 
+      "Santiago": "santi123" 
     };
     const BARBERS_NAMES = Object.keys(BARBERS_AUTH);
     
@@ -833,4 +833,24 @@
                          return null; // Si no quedan intervalos, eliminamos el nodo de la fecha
                     }
                     
-                    current.intervals
+                    current.intervals = intervals;
+                    return current;
+                });
+            }
+            
+            alert('Bloqueo de agenda eliminado con éxito.');
+            loadAbsences();
+            loadAppointments(); // Recargar citas para actualizar disponibilidad visual
+        } catch(e){
+            alert('Error al eliminar el bloqueo de agenda.');
+            console.error(e);
+        }
+    }
+
+    // Inicializar fecha por defecto
+    absenceDateInput.value = getCurrentDateISO();
+    intervalDateInput.value = getCurrentDateISO();
+    
+</script>
+</body>
+</html>
