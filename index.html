@@ -193,7 +193,8 @@
 
         // Almacenamiento global para el estado
         let allAppointmentsCache = [];
-        let allAbsencesCache = { days: {}, hours: {} }; // NEW: Cache para todas las ausencias
+        // NEW: Almacenará { barbero: { days: { YYYY-MM-DD: {...} }, hours: { YYYY-MM-DD: { minutes: {...} } } } }
+        let allAbsencesCache = {}; 
         let currentAppointmentCount = 0;
         const notificationSound = new Audio('https://s3-us-west-2.amazonaws.com/s.cdpn.io/12028/notification.mp3'); 
 
@@ -258,35 +259,34 @@
             return hours * 60 + minutes;
         }
 
-        // --- NEW: LÓGICA DE DETECCIÓN DE AUSENCIA ---
-        // Verifica si una cita específica (dateISO, startMinutes, endMinutes) cae dentro de una ausencia programada.
+        // --- NEW: LÓGICA DE DETECCIÓN DE AUSENCIA EN CITA (USA allAbsencesCache) ---
         function checkAppointmentAbsence(dateISO, startMinutes, endMinutes) {
-            const days = allAbsencesCache.days || {};
-            const hours = allAbsencesCache.hours || {};
+            const absences = allAbsencesCache[LOGGED_IN_BARBER] || {};
+            const dayAbsences = absences.days || {};
+            const hourAbsences = absences.hours || {};
+            const today = new Date().toISOString().split('T')[0];
             
-            // 1. Verificar Ausencia por Días Completos
-            for (const startDate in days) {
-                const period = days[startDate];
-                // Si la fecha de la cita es >= fecha inicio Y <= fecha fin
-                if (dateISO >= startDate && dateISO <= period.endDate) {
+            // 1. Verificar Ausencia por Días Completos (Rango)
+            for (const startDate in dayAbsences) {
+                const period = dayAbsences[startDate];
+                if (period.endDate >= today && dateISO >= startDate && dateISO <= period.endDate) {
                     return { isAbsent: true, reason: period.reason || 'Ausencia de día completo' };
                 }
             }
             
-            // 2. Verificar Ausencia por Horas
-            const hourlyAbsencesOnDate = hours[dateISO];
+            // 2. Verificar Ausencia por Horas (Solo en la fecha de la cita)
+            const hourlyAbsencesOnDate = hourAbsences[dateISO];
             if (hourlyAbsencesOnDate) {
                 for (const startMinKey in hourlyAbsencesOnDate) {
                     const period = hourlyAbsencesOnDate[startMinKey];
                     const absenceStart = Number(startMinKey);
                     const absenceEnd = Number(period.endMinutes);
+                    
+                    const isFutureOrPresent = dateISO > today || (dateISO === today && absenceEnd > (new Date().getHours() * 60 + new Date().getMinutes()));
 
-                    // Revisa si la cita se solapa con el periodo de ausencia
-                    // Cita inicia DENTRO del periodo de ausencia: (absenceStart <= startMinutes < absenceEnd)
-                    // O Cita termina DENTRO del periodo de ausencia: (absenceStart < endMinutes <= absenceEnd)
-                    // O Ausencia DENTRO de la cita: (startMinutes <= absenceStart AND absenceEnd <= endMinutes)
-                    if ( (startMinutes < absenceEnd && endMinutes > absenceStart) ) {
-                        return { isAbsent: true, reason: period.reason || 'Ausencia temporal por horas' };
+                    // Conflicto: [startMinutes, endMinutes] se solapa con [absenceStart, absenceEnd]
+                    if (isFutureOrPresent && (startMinutes < absenceEnd && endMinutes > absenceStart) ) {
+                        return { isAbsent: true, reason: period.reason || 'Bloqueo temporal por horas' };
                     }
                 }
             }
@@ -303,12 +303,17 @@
                     const appointmentsOnDate = datesData[dateISO];
                     for (const key in appointmentsOnDate) {
                         const appt = appointmentsOnDate[key];
-                        appt.dateISO = dateISO;
-                        appt.id = key; 
-                        appt.startMinutes = Number(appt.startMinutes);
-                        appt.endMinutes = Number(appt.endMinutes || (appt.startMinutes + appt.durationMinutes));
-                        appt.completed = appt.completed || false; 
-                        allAppointments.push(appt);
+                        // Solo procesar citas para el barbero logueado (aunque ya se filtra por ruta)
+                        if (appt.barbero === LOGGED_IN_BARBER) { 
+                            appt.dateISO = dateISO;
+                            appt.id = key; 
+                            appt.startMinutes = Number(appt.startMinutes);
+                            appt.endMinutes = Number(appt.endMinutes || (appt.startMinutes + appt.durationMinutes));
+                            appt.completed = appt.completed || false; 
+                            // NEW: Verificar si la cita cae en un periodo de ausencia del barbero
+                            appt.absenceStatus = checkAppointmentAbsence(dateISO, appt.startMinutes, appt.endMinutes);
+                            allAppointments.push(appt);
+                        }
                     }
                 }
             }
@@ -377,12 +382,12 @@
             const password = passwordEl.value.trim();
             
             const user = BARBER_CREDENTIALS[username];
-
+            
             if(user && user.password === password) {
                 LOGGED_IN_BARBER = user.name;
                 localStorage.setItem('loggedBarber', LOGGED_IN_BARBER);
                 showMessage(loginMessageEl, 'success', `Bienvenido, ${LOGGED_IN_BARBER}.`);
-                requestNotificationPermission(); // Pide permiso de notificación
+                requestNotificationPermission(); 
                 checkLoginState();
             } else {
                 showMessage(loginMessageEl, 'error', 'Usuario o contraseña incorrectos.');
@@ -398,24 +403,21 @@
         
         // --- DASHBOARD DATA LOADING ---
 
-        async function loadDashboardData(barbero) {
-            // Se cambia de 'displayAbsences' a 'setupAbsenceListener' para ser reactivo
+        function loadDashboardData(barbero) {
             setupAbsenceListener(barbero); 
-            setupAppointmentListener(barbero); // Inicializa el listener en tiempo real
+            setupAppointmentListener(barbero); 
         }
 
         // --- ABSENCE LISTENER (Real-time updates) ---
         function setupAbsenceListener(barbero) {
             const absencesRef = ref(db, `unavailableDates/${barbero}`);
             onValue(absencesRef, (snapshot) => {
-                const data = snapshot.val() || { days: {}, hours: {} };
-                allAbsencesCache = {
-                    days: data.days || {},
-                    hours: data.hours || {}
-                };
+                // Almacena solo la data del barbero logueado para la caché global
+                allAbsencesCache[barbero] = snapshot.val() || { days: {}, hours: {} };
+                
                 // Una vez que se actualiza la caché de ausencias, se refrescan ambos
                 displayAbsences(barbero);
-                refreshAppointmentDisplay(barbero); // Importante: refresca citas para aplicar el estado de ausencia
+                refreshAppointmentDisplay(barbero); 
             });
         }
 
@@ -423,14 +425,16 @@
         // --- APPOINTMENT LISTENER LOGIC (Real-time updates) ---
 
         function setupAppointmentListener(barbero) {
-            const appointmentsRef = ref(db, `appointments/${barbero}`);
+            const appointmentsRef = ref(db, `appointments`); // Escucha todo, filtra por barbero en processSnapshot
+            
+            let initialLoad = true;
             
             // onValue escucha cambios en tiempo real
             onValue(appointmentsRef, (snapshot) => {
-                const newAppointmentsData = processSnapshot(snapshot);
+                const newAppointmentsData = processSnapshot(snapshot).filter(a => a.barbero === barbero);
                 
                 // 1. Check for new appointments 
-                if (currentAppointmentCount > 0 && newAppointmentsData.length > currentAppointmentCount) {
+                if (!initialLoad) {
                     const currentActive = allAppointmentsCache.filter(a => !a.completed).length;
                     const newActive = newAppointmentsData.filter(a => !a.completed).length;
                     
@@ -445,6 +449,7 @@
 
                 // 3. Refresh display with the new data (and apply current filter)
                 refreshAppointmentDisplay(barbero);
+                initialLoad = false;
             });
         }
         
@@ -507,7 +512,8 @@
                             <th>Teléfono</th>
                             <th>Servicio</th>
                             <th>Fecha y Hora</th>
-                            <th>Asistencia y Razón</th> <th>Creada</th>
+                            <th>Asistencia y Razón</th>
+                            <th>Creada</th>
                             <th>Acciones</th> 
                         </tr>
                     </thead>
@@ -523,7 +529,7 @@
                 const isPast = appt.dateISO < todayISO || (appt.dateISO === todayISO && appt.endMinutes < nowMinutes);
                 const isCompleted = appt.completed === true;
 
-                // ** Lógica de Ausencia y Asistencia (Punto 3 del requerimiento) **
+                // ** Lógica de Ausencia y Asistencia **
                 let statusPill = '';
                 let statusReason = '';
                 
@@ -566,7 +572,7 @@
                     <tr class="${rowClasses}">
                         <td class="${textClasses}">${firstName} <br><strong>${lastName}</strong></td>
                         <td class="${textClasses}">
-                            <a href="https://wa.me/${appt.telefono}" target="_blank" class="phone-link" style="${isCompleted || isPast ? 'opacity: 0.8;' : ''}">
+                            <a href="https://wa.me/57${appt.telefono.replace(/\D/g,'')}" target="_blank" class="phone-link" style="${isCompleted || isPast ? 'opacity: 0.8;' : ''}">
                                 ${appt.telefono} 📲
                             </a>
                         </td>
@@ -599,7 +605,7 @@
                                 title="Eliminar la cita">
                                 🗑️ Eliminar
                             </button>
-                            <a href="https://wa.me/${appt.telefono}" target="_blank" class="action-btn edit-btn" title="Contactar al cliente para editar/reagendar">
+                            <a href="https://wa.me/57${appt.telefono.replace(/\D/g,'')}" target="_blank" class="action-btn edit-btn" title="Contactar al cliente para editar/reagendar">
                                 ✏️ Editar
                             </a>
                         </td>
@@ -683,27 +689,30 @@
         }
 
 
-        // --- ABSENCE LOGIC (MODIFICADO PARA INCLUIR HORAS) ---
+        // --- ABSENCE LOGIC (MODIFICADO) ---
 
-        // Se mantiene la función para mostrar, pero ahora usa la caché global 'allAbsencesCache'
         async function displayAbsences(barbero) {
             absenceListContainer.innerHTML = '<p style="text-align:center;"><span class="loader"></span> Cargando...</p>';
             
-            const dayAbsences = allAbsencesCache.days || {};
-            const hourAbsences = allAbsencesCache.hours || {};
+            const absences = allAbsencesCache[barbero] || {};
+            const dayAbsences = absences.days || {};
+            const hourAbsences = absences.hours || {};
             
             const allAbsences = [];
             const today = new Date().toISOString().split('T')[0];
+            const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+
 
             // 1. Días Completos
             for (const startDate in dayAbsences) {
                 const period = dayAbsences[startDate];
+                const isPast = period.endDate < today;
                 allAbsences.push({
                     type: 'day',
                     startDate: startDate,
                     endDate: period.endDate,
                     reason: period.reason,
-                    isPast: period.endDate < today,
+                    isPast: isPast,
                     sortKey: startDate // Clave de ordenación
                 });
             }
@@ -714,13 +723,15 @@
                 for (const startMinutes in periods) {
                     const period = periods[startMinutes];
                     
+                    const isPast = date < today || (date === today && period.endMinutes < nowMinutes);
+                    
                     allAbsences.push({
                         type: 'hour',
                         date: date,
                         startMinutes: Number(startMinutes),
                         endMinutes: Number(period.endMinutes),
                         reason: period.reason,
-                        isPast: date < today || (date === today && period.endMinutes < (new Date().getHours() * 60 + new Date().getMinutes())),
+                        isPast: isPast,
                         sortKey: `${date}-${String(startMinutes).padStart(4, '0')}` // Clave de ordenación
                     });
                 }
@@ -730,7 +741,7 @@
 
 
             if(allAbsences.length === 0) {
-                absenceListContainer.innerHTML = `<p style="text-align:center; color:var(--muted);">No hay ausencias programadas para ti.</p>`;
+                absenceListContainer.innerHTML = `<p style="text-align:center; color:var(--muted);">No tienes ausencias programadas para ti.</p>`;
                 return;
             }
 
@@ -819,7 +830,6 @@
                 startDateEl.value = '';
                 endDateEl.value = '';
                 reasonEl.value = '';
-                // No es necesario llamar a displayAbsences, el listener lo hará
                 
             } catch(error) {
                 console.error("Error saving day absence:", error);
@@ -830,7 +840,7 @@
             }
         });
         
-        // NEW: Lógica de Ausencias por Horas
+        // Lógica de Ausencias por Horas
         btnSaveHourlyAbsence.addEventListener('click', async () => {
             const barbero = LOGGED_IN_BARBER; 
             const date = hourlyDateEl.value;
@@ -870,7 +880,6 @@
                 startTimeEl.value = '';
                 endTimeEl.value = '';
                 hourlyReasonEl.value = '';
-                // No es necesario llamar a displayAbsences, el listener lo hará
                 
             } catch(error) {
                 console.error("Error saving hourly absence:", error);
@@ -910,7 +919,6 @@
             try {
                 await remove(ref(db, path));
                 showMessage(absenceMessageEl, 'success', `Ausencia eliminada correctamente.`);
-                // No es necesario llamar a displayAbsences, el listener lo hará
             } catch(error) {
                 console.error("Error deleting absence:", error);
                 showMessage(absenceMessageEl, 'error', 'Error al eliminar la ausencia.');
@@ -924,7 +932,6 @@
 
         // Inicialización
         checkLoginState();
-
     </script>
 </body>
 </html>
